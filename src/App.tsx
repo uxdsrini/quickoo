@@ -1,0 +1,180 @@
+import { useState } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CartProvider, useCart } from './contexts/CartContext';
+import { HomePage } from './pages/HomePage';
+import { ShopDetailPage } from './pages/ShopDetailPage';
+import { CartPage } from './pages/CartPage';
+import { CheckoutPage } from './pages/CheckoutPage';
+import { OrdersPage } from './pages/OrdersPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { AuthPage } from './pages/AuthPage';
+import { ShoppingBag, ShoppingCart, Package, User as UserIcon, Home } from 'lucide-react';
+
+type Page = 'home' | 'shop' | 'cart' | 'checkout' | 'orders' | 'profile' | 'auth';
+
+function AppContent() {
+  const { user } = useAuth();
+  const { getTotalItems } = useCart();
+  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+
+  const handleShopSelect = (shopId: string) => {
+    setSelectedShopId(shopId);
+    setCurrentPage('shop');
+  };
+
+  const handleNavigation = (page: Page) => {
+    if (page === 'profile' || page === 'orders' || page === 'checkout') {
+      if (!user) {
+        setCurrentPage('auth');
+        return;
+      }
+    }
+    setCurrentPage(page);
+  };
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'home':
+        return <HomePage onShopSelect={handleShopSelect} />;
+      case 'shop':
+        return selectedShopId ? (
+          <ShopDetailPage
+            shopId={selectedShopId}
+            onBack={() => setCurrentPage('home')}
+          />
+        ) : (
+          <HomePage onShopSelect={handleShopSelect} />
+        );
+      case 'cart':
+        return (
+          <CartPage
+            onCheckout={() => handleNavigation('checkout')}
+          />
+        );
+      case 'checkout':
+        return (
+          <CheckoutPage
+            onSuccess={() => setCurrentPage('orders')}
+            onBack={() => setCurrentPage('cart')}
+          />
+        );
+      case 'orders':
+        return <OrdersPage />;
+      case 'profile':
+        return <ProfilePage />;
+      case 'auth':
+        return <AuthPage />;
+      default:
+        return <HomePage onShopSelect={handleShopSelect} />;
+    }
+  };
+
+  const cartItemCount = getTotalItems();
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <header className="bg-white shadow-sm sticky top-0 z-10 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setCurrentPage('home')}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <ShoppingBag className="w-8 h-8 text-emerald-600" />
+              <h1 className="text-2xl font-bold text-gray-900">GroceryMart</h1>
+            </button>
+            <div className="flex items-center gap-4">
+              {user ? (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <UserIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{user.email}</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setCurrentPage('auth')}
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="pb-6">{renderPage()}</main>
+
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-20">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-around py-3">
+            <button
+              onClick={() => setCurrentPage('home')}
+              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-lg transition-colors ${
+                currentPage === 'home'
+                  ? 'text-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Home className="w-6 h-6" />
+              <span className="text-xs font-medium">Home</span>
+            </button>
+
+            <button
+              onClick={() => setCurrentPage('cart')}
+              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-lg transition-colors relative ${
+                currentPage === 'cart'
+                  ? 'text-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ShoppingCart className="w-6 h-6" />
+              {cartItemCount > 0 && (
+                <span className="absolute top-0 right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
+              <span className="text-xs font-medium">Cart</span>
+            </button>
+
+            <button
+              onClick={() => handleNavigation('orders')}
+              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-lg transition-colors ${
+                currentPage === 'orders'
+                  ? 'text-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Package className="w-6 h-6" />
+              <span className="text-xs font-medium">Orders</span>
+            </button>
+
+            <button
+              onClick={() => handleNavigation('profile')}
+              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-lg transition-colors ${
+                currentPage === 'profile'
+                  ? 'text-emerald-600 bg-emerald-50'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <UserIcon className="w-6 h-6" />
+              <span className="text-xs font-medium">Profile</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
+    </AuthProvider>
+  );
+}
+
+export default App;
