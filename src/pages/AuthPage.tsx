@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, ShoppingBag, Mail, Lock, User } from 'lucide-react';
 
-export function AuthPage() {
+interface AuthPageProps {
+  onSignUpSuccess?: () => void;
+  onSignInSuccess?: () => void;
+}
+
+export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
   const { signUp, signIn } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,16 +25,20 @@ export function AuthPage() {
       if (isSignUp) {
         const { error } = await signUp(formData.email, formData.password, formData.fullName);
         if (error) throw error;
-        alert('Account created successfully! You can now sign in.');
-        setIsSignUp(false);
-        setFormData({ email: '', password: '', fullName: '' });
+
+        if (onSignUpSuccess) {
+          onSignUpSuccess();
+        }
       } else {
         const { error } = await signIn(formData.email, formData.password);
         if (error) throw error;
+
+        if (onSignInSuccess) {
+          onSignInSuccess();
+        }
       }
     } catch (error: any) {
       alert(error.message || 'An error occurred. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

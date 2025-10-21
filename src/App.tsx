@@ -64,7 +64,12 @@ function AppContent() {
       case 'profile':
         return <ProfilePage />;
       case 'auth':
-        return <AuthPage />;
+        return (
+          <AuthPage
+            onSignUpSuccess={() => setCurrentPage('home')}
+            onSignInSuccess={() => setCurrentPage('home')}
+          />
+        );
       default:
         return <HomePage onShopSelect={handleShopSelect} />;
     }
