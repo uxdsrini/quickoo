@@ -38,55 +38,68 @@ export function ShopDetailPage({ shopId, onBack }: ShopDetailPageProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadShopAndProducts();
-  }, [shopId]);
+    let cancelled = false;
 
-  const loadShopAndProducts = async () => {
-    try {
-      const storeDocRef = doc(db, 'stores', shopId);
-      const storeDoc = await getDoc(storeDocRef);
+    const loadShopAndProducts = async () => {
+      try {
+        const storeDocRef = doc(db, 'stores', shopId);
+        const storeDoc = await getDoc(storeDocRef);
 
-      if (storeDoc.exists()) {
-        const storeData = storeDoc.data();
-        setShop({
-          id: storeDoc.id,
-          name: storeData.name || 'Store',
-          address: storeData.address || '',
-          rating: storeData.rating || 4.5,
-          image_url: storeData.image || storeData.imageUrl || null,
-          phone: storeData.phone || null,
+        if (cancelled) return;
+
+        if (storeDoc.exists()) {
+          const storeData = storeDoc.data();
+          setShop({
+            id: storeDoc.id,
+            name: storeData.name || 'Store',
+            address: storeData.address || '',
+            rating: storeData.rating || 4.5,
+            image_url: storeData.image || storeData.imageUrl || null,
+            phone: storeData.phone || null,
+          });
+        }
+
+        const productsRef = collection(db, 'products');
+        const q = query(productsRef, where('storeId', '==', shopId));
+        const querySnapshot = await getDocs(q);
+
+        if (cancelled) return;
+
+        const productsData: Product[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          productsData.push({
+            id: doc.id,
+            name: data.name || '',
+            description: data.description || null,
+            price: data.price || 0,
+            selling_price: data.price || 0,
+            discount: 0,
+            image_url: data.image || null,
+            unit: data.unit || 'kg',
+            in_stock: data.inStock !== false,
+            shop_id: shopId,
+            category: data.category || null,
+          });
         });
+
+        setProducts(productsData);
+      } catch (error) {
+        console.error('Error loading shop details:', error);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
+    };
 
-      const productsRef = collection(db, 'products');
-      const q = query(productsRef, where('storeId', '==', shopId));
-      const querySnapshot = await getDocs(q);
+    loadShopAndProducts();
 
-      const productsData: Product[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        productsData.push({
-          id: doc.id,
-          name: data.name || '',
-          description: data.description || null,
-          price: data.price || 0,
-          selling_price: data.price || 0,
-          discount: 0,
-          image_url: data.image || null,
-          unit: data.unit || 'kg',
-          in_stock: data.inStock !== false,
-          shop_id: shopId,
-          category: data.category || null,
-        });
-      });
-
-      setProducts(productsData);
-    } catch (error) {
-      console.error('Error loading shop details:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      cancelled = true;
+    };
+  }, [shopId]);
 
   if (loading) {
     return (
