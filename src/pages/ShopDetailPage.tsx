@@ -146,7 +146,7 @@ export function ShopDetailPage({ shopId, onBack }: ShopDetailPageProps) {
             //   className="w-full h-full object-cover opacity-40"
             // />
           )} */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="absolute inset-0" />
         </div>
         <div className="p-6 -mt-16 relative">
           <div className="flex items-start gap-4">
