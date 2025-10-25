@@ -138,7 +138,7 @@ export function ShopDetailPage({ shopId, onBack }: ShopDetailPageProps) {
       </button>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-        <div className="h-48 bg-gradient-to-r from-emerald-500 to-teal-600 relative overflow-hidden">
+        <div>
           {/* {shop.image_url && (
             // <img
             //   src={shop.image_url}
