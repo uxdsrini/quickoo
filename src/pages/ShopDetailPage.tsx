@@ -140,11 +140,11 @@ export function ShopDetailPage({ shopId, onBack }: ShopDetailPageProps) {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
         <div className="h-48 bg-gradient-to-r from-emerald-500 to-teal-600 relative overflow-hidden">
           {shop.image_url && (
-            <img
-              src={shop.image_url}
-              alt={shop.name}
-              className="w-full h-full object-cover opacity-40"
-            />
+            // <img
+            //   src={shop.image_url}
+            //   alt={shop.name}
+            //   className="w-full h-full object-cover opacity-40"
+            // />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         </div>
