@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, orderBy, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Package, Loader2, Clock, CheckCircle, XCircle } from 'lucide-react';
@@ -17,7 +17,11 @@ interface Order {
   storeName: string;
 }
 
-export function OrdersPage() {
+interface OrdersPageProps {
+  refreshTrigger?: number;
+}
+
+export function OrdersPage({ refreshTrigger = 0 }: OrdersPageProps) {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,15 +32,14 @@ export function OrdersPage() {
     } else {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, refreshTrigger]);
 
   const loadOrders = async () => {
     try {
       const ordersRef = collection(db, 'orders');
       const q = query(
         ordersRef,
-        where('userId', '==', user?.uid),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', user?.uid)
       );
       const querySnapshot = await getDocs(q);
 
@@ -65,6 +68,13 @@ export function OrdersPage() {
           storeName,
         });
       }
+
+      // Sort by createdAt descending on the client side to avoid Firestore composite index requirement
+      ordersData.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
 
       setOrders(ordersData);
     } catch (error) {
