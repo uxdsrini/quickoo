@@ -22,11 +22,14 @@ export function CheckoutPage({ onSuccess, onBack }: CheckoutPageProps) {
     address: '',
     paymentMethod: 'cod',
     notes: '',
+    couponCode: '',
   });
 
   const subtotal = getTotalPrice();
-  const deliveryFee = subtotal >= 500 ? 0 : 40;
-  const total = subtotal + deliveryFee;
+  const deliveryFee = 0; // Always FREE
+  const platformCharges = 10; // Fixed 10 INR platform charges
+  const discount = 0; // Coupon discount (can be implemented later)
+  const total = subtotal + deliveryFee + platformCharges - discount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +57,15 @@ export function CheckoutPage({ onSuccess, onBack }: CheckoutPageProps) {
         paymentMethod: formData.paymentMethod,
         paymentStatus: formData.paymentMethod === 'cod' ? 'pending' : 'paid',
         subtotal,
-        discountAmount: 0,
+        discountAmount: discount,
         deliveryFee,
+        platformCharges,
         totalAmount: total,
         deliveryAddress: formData.address,
         customerPhone: formData.phone,
         customerName: formData.name,
         notes: formData.notes || '',
+        couponCode: formData.couponCode || '',
         items: items.map(item => ({
           productId: item.id,
           productName: item.name,
@@ -211,23 +216,42 @@ export function CheckoutPage({ onSuccess, onBack }: CheckoutPageProps) {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
+            
+            {/* Coupon Code - Optional */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Coupon Code (Optional)
+              </label>
+              <input
+                type="text"
+                value={formData.couponCode}
+                onChange={e => setFormData({ ...formData, couponCode: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                placeholder="Enter coupon code"
+              />
+            </div>
+
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
-                <span>Items ({items.length})</span>
+                <span>Product Price ({items.length} items)</span>
                 <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Delivery Fee</span>
-                <span className="font-semibold">
-                  {deliveryFee === 0 ? (
-                    <span className="text-emerald-600">FREE</span>
-                  ) : (
-                    `₹${deliveryFee.toFixed(2)}`
-                  )}
-                </span>
+                <span className="font-semibold text-emerald-600">FREE</span>
               </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Platform Charges</span>
+                <span className="font-semibold">₹{platformCharges.toFixed(2)}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-emerald-600">
+                  <span>Coupon Discount</span>
+                  <span className="font-semibold">-₹{discount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="border-t pt-3 flex justify-between text-lg font-bold text-gray-900">
-                <span>Total</span>
+                <span>Total Amount</span>
                 <span>₹{total.toFixed(2)}</span>
               </div>
             </div>
