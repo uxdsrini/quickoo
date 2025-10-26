@@ -3,7 +3,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ShopCard } from '../components/ShopCard';
 import { useAuth } from '../hooks/useAuth';
-import { Store, Loader2, Search, Clock, MapPin, AlertCircle } from 'lucide-react';
+import { Store, Loader2, Search, Clock, MapPin, AlertCircle, X } from 'lucide-react';
 import * as React from "react"
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
@@ -44,6 +44,9 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [locationName, setLocationName] = useState('Your Location');
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [showDeliveryCard, setShowDeliveryCard] = useState(true);
 
   useEffect(() => {
     loadShops();
@@ -59,12 +62,87 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     }
   }, [user, authLoading]);
 
+  // Request location permission on component mount
+  useEffect(() => {
+    const getCurrentLocation = () => {
+      setLocationLoading(true);
+      
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          await getLocationName(latitude, longitude);
+          setLocationLoading(false);
+        },
+        (error) => {
+          console.error('Location error:', error);
+          setLocationName('Location unavailable');
+          setLocationLoading(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    };
+
+    const getLocationName = async (lat: number, lng: number) => {
+      try {
+        // Using OpenStreetMap Nominatim API (free, no API key required)
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          const city = data.address?.city || 
+                      data.address?.town || 
+                      data.address?.village || 
+                      data.address?.county || 
+                      'Your Location';
+          setLocationName(city);
+        } else {
+          setLocationName('Your Location');
+        }
+      } catch (error) {
+        console.error('Geocoding error:', error);
+        setLocationName('Your Location');
+      }
+    };
+
+    const requestLocation = async () => {
+      if (!navigator.geolocation) {
+        setLocationName('Location unavailable');
+        return;
+      }
+
+      // Check if we already have permission
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        if (permission.state === 'granted') {
+          getCurrentLocation();
+        } else if (permission.state === 'prompt') {
+          getCurrentLocation();
+        } else {
+          setLocationName('Location access denied');
+        }
+      } catch {
+        // Fallback for browsers that don't support permissions API
+        getCurrentLocation();
+      }
+    };
+
+    requestLocation();
+  }, []);
+
   const handleWelcomeClose = () => {
     if (user) {
       localStorage.setItem(`welcome-seen-${user.uid}`, 'true');
     }
     setShowWelcomePopup(false);
   };
+
+
 
   // No automatic redirect - let users browse even with incomplete profiles
 
@@ -114,14 +192,68 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Store className="w-8 h-8 text-emerald-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Grocery Stores Near You</h1>
+    <div className="max-w-7xl mx-auto px-4 py-4">
+      {/* Location Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-emerald-600" />
+          {locationLoading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-3 h-3 text-emerald-600 animate-spin" />
+              <span className="text-sm font-medium text-gray-500">Getting location...</span>
+            </div>
+          ) : (
+            <span className="text-sm font-medium text-gray-700">{locationName}</span>
+          )}
         </div>
-        <p className="text-gray-600">Browse local grocery stores and order fresh products online</p>
       </div>
+
+      {/* Compact Title Section */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Store className="w-6 h-6 text-emerald-600" />
+          <h1 className="text-xl font-bold text-gray-900">Grocery Stores Near You</h1>
+        </div>
+        <p className="text-sm text-gray-600">Browse local stores and order fresh products</p>
+      </div>
+
+      {/* Delivery Timing Info Card */}
+      {showDeliveryCard && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 relative">
+          <div className="flex items-start gap-3">
+            <Clock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900 mb-1">Delivery Timings</h3>
+              <div className="text-sm text-blue-800 space-y-1">
+                <p>
+                  <span className="font-medium">Regular Hours:</span> 7:00 AM to 7:00 PM
+                </p>
+                <p>
+                  <span className="font-medium">Emergency Service:</span> 7:00 PM to 10:00 PM (Extra charges apply)
+                </p>
+                <p className="text-xs">
+                  For emergency orders after 7 PM, after placing your order call to  {' '}
+                  <a 
+                    href="tel:9963650466" 
+                    className="font-medium text-blue-700 hover:text-blue-800 underline"
+                  >
+                    99636 50466
+                  </a>{' '}
+                 *
+                </p>
+              </div>
+            </div>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowDeliveryCard(false)}
+              className="absolute top-3 right-3 p-1 hover:bg-red-100 rounded-full transition-colors group"
+              aria-label="Close delivery timings card"
+            >
+              <X className="w-4 h-4 text-red-500 group-hover:text-red-600" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Profile Completion Banner */}
       {user && !isProfileComplete() && (
