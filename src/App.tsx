@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { CartProvider, useCart } from './contexts/CartContext';
 import { HomePage } from './pages/HomePage';
 import { ShopDetailPage } from './pages/ShopDetailPage';
@@ -13,20 +14,41 @@ import { ShoppingBag, ShoppingCart, Package, User as UserIcon, Home } from 'luci
 type Page = 'home' | 'shop' | 'cart' | 'checkout' | 'orders' | 'profile' | 'auth';
 
 function AppContent() {
-  const { user } = useAuth();
+  const { user, isProfileComplete, loading } = useAuth();
   const { getTotalItems } = useCart();
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+  const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
 
   const handleShopSelect = (shopId: string) => {
     setSelectedShopId(shopId);
     setCurrentPage('shop');
   };
 
+  // Navigate to home after login (profile completion handled in HomePage)
+  useEffect(() => {
+    if (user && !loading && !hasCheckedProfile) {
+      setHasCheckedProfile(true);
+      
+      // Always go to home page after login, profile banner will guide incomplete profiles
+      if (currentPage === 'auth') {
+        setCurrentPage('home');
+      }
+    } else if (!user) {
+      setHasCheckedProfile(false);
+    }
+  }, [user, loading, hasCheckedProfile, currentPage]);
+
   const handleNavigation = (page: Page) => {
     if (page === 'profile' || page === 'orders' || page === 'checkout') {
       if (!user) {
         setCurrentPage('auth');
+        return;
+      }
+      // Check if profile is complete for checkout
+      if (page === 'checkout' && !isProfileComplete()) {
+        alert('Please complete your profile before placing an order');
+        setCurrentPage('profile');
         return;
       }
     }
@@ -36,7 +58,12 @@ function AppContent() {
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <HomePage onShopSelect={handleShopSelect} />;
+        return (
+          <HomePage 
+            onShopSelect={handleShopSelect}
+            onNavigateToProfile={() => setCurrentPage('profile')}
+          />
+        );
       case 'shop':
         return selectedShopId ? (
           <ShopDetailPage
@@ -62,16 +89,29 @@ function AppContent() {
       case 'orders':
         return <OrdersPage />;
       case 'profile':
-        return <ProfilePage />;
+        return (
+          <ProfilePage 
+            onSignOut={() => setCurrentPage('auth')}
+            onProfileComplete={() => setCurrentPage('home')}
+          />
+        );
       case 'auth':
         return (
           <AuthPage
-            onSignUpSuccess={() => setCurrentPage('home')}
-            onSignInSuccess={() => setCurrentPage('home')}
+            onSignUpSuccess={() => setCurrentPage('profile')}
+            onSignInSuccess={() => {
+              // The useEffect will handle navigation based on profile completion
+              // This callback can be used for immediate actions if needed
+            }}
           />
         );
       default:
-        return <HomePage onShopSelect={handleShopSelect} />;
+        return (
+          <HomePage 
+            onShopSelect={handleShopSelect}
+            onNavigateToProfile={() => setCurrentPage('profile')}
+          />
+        );
     }
   };
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Package, Loader2, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 interface Order {

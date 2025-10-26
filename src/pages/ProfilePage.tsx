@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, Phone, MapPin, LogOut, Loader2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { User, Mail, Phone, MapPin, LogOut, Loader2, AlertCircle } from 'lucide-react';
 
-export function ProfilePage() {
-  const { user, signOut } = useAuth();
-  const [loading, setLoading] = useState(false);
+interface ProfilePageProps {
+  onSignOut?: () => void;
+  onProfileComplete?: () => void;
+}
+
+export function ProfilePage({ onSignOut, onProfileComplete }: ProfilePageProps = {}) {
+  const { user, userProfile, profileLoading, loadUserProfile, signOut } = useAuth();
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
     fullName: '',
@@ -15,47 +19,43 @@ export function ProfilePage() {
     city: '',
     pincode: '',
   });
+  const profileComplete = !!(profile.fullName && profile.phone && profile.address && profile.city && profile.pincode);
 
   useEffect(() => {
-    if (user) {
-      loadProfile();
+    if (userProfile) {
+      setProfile({
+        fullName: userProfile.fullName || '',
+        phone: userProfile.phone || '',
+        address: userProfile.address || '',
+        city: userProfile.city || '',
+        pincode: userProfile.pincode || '',
+      });
     }
-  }, [user]);
-
-  const loadProfile = async () => {
-    setLoading(true);
-    try {
-      const userDocRef = doc(db, 'users', user!.uid);
-      const userDoc = await getDoc(userDocRef);
-
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        setProfile({
-          fullName: data.fullName || '',
-          phone: data.phone || '',
-          address: data.address || '',
-          city: data.city || '',
-          pincode: data.pincode || '',
-        });
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [userProfile]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
     try {
+      const isComplete = !!(profile.fullName && profile.phone && profile.address && profile.city && profile.pincode);
+      
       await setDoc(doc(db, 'users', user!.uid), {
         email: user?.email,
         ...profile,
+        profileCompleted: isComplete,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
-      alert('Profile updated successfully!');
+      
+      // Refresh the profile data in the context
+      await loadUserProfile();
+      
+      if (isComplete) {
+        // If profile is complete and callback is provided, navigate to home immediately
+        if (onProfileComplete) {
+          onProfileComplete();
+        }
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Failed to update profile. Please try again.');
@@ -67,6 +67,9 @@ export function ProfilePage() {
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out?')) {
       await signOut();
+      if (onSignOut) {
+        onSignOut();
+      }
     }
   };
 
@@ -82,7 +85,7 @@ export function ProfilePage() {
     );
   }
 
-  if (loading) {
+  if (profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
@@ -102,6 +105,18 @@ export function ProfilePage() {
           Sign Out
         </button>
       </div>
+
+      {!profileComplete && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-amber-900 mb-1">Complete Your Profile</h3>
+            <p className="text-sm text-amber-800">
+              Please fill in all required information to place orders and enjoy a seamless shopping experience.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <div className="flex items-center gap-4 mb-6">

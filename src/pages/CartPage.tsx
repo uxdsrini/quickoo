@@ -21,7 +21,7 @@ export function CartPage({ onCheckout }: CartPageProps) {
   }
 
   const subtotal = getTotalPrice();
-  const deliveryFee = subtotal >= 500 ? 0 : 40;
+  const deliveryFee = 0; // Always FREE
   const total = subtotal + deliveryFee;
 
   return (
@@ -88,19 +88,8 @@ export function CartPage({ onCheckout }: CartPageProps) {
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Delivery Fee</span>
-                <span className="font-semibold">
-                  {deliveryFee === 0 ? (
-                    <span className="text-emerald-600">FREE</span>
-                  ) : (
-                    `₹${deliveryFee.toFixed(2)}`
-                  )}
-                </span>
+                <span className="font-semibold text-emerald-600">FREE</span>
               </div>
-              {subtotal < 500 && (
-                <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                  Add ₹{(500 - subtotal).toFixed(2)} more for free delivery
-                </p>
-              )}
               <div className="border-t pt-3 flex justify-between text-lg font-bold text-gray-900">
                 <span>Total</span>
                 <span>₹{total.toFixed(2)}</span>

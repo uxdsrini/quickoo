@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -6,31 +6,92 @@ import {
   onAuthStateChanged,
   type User as FirebaseUser
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+
+export interface UserProfile {
+  fullName: string;
+  phone: string;
+  address: string;
+  city: string;
+  pincode: string;
+  email: string;
+  profileCompleted?: boolean;
+}
 
 interface AuthContextType {
   user: FirebaseUser | null;
+  userProfile: UserProfile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  profileLoading: boolean;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  loadUserProfile: () => Promise<void>;
+  isProfileComplete: () => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const loadUserProfile = useCallback(async (userId?: string) => {
+    const uid = userId || user?.uid;
+    if (!uid) return;
+
+    setProfileLoading(true);
+    try {
+      const userDocRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const profile: UserProfile = {
+          fullName: data.fullName || '',
+          phone: data.phone || '',
+          address: data.address || '',
+          city: data.city || '',
+          pincode: data.pincode || '',
+          email: data.email || '',
+          profileCompleted: data.profileCompleted || false,
+        };
+        setUserProfile(profile);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [user?.uid]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      if (user) {
+        await loadUserProfile(user.uid);
+      } else {
+        setUserProfile(null);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [loadUserProfile]);
+
+  const isProfileComplete = () => {
+    if (!userProfile) return false;
+    return !!(
+      userProfile.fullName &&
+      userProfile.phone &&
+      userProfile.address &&
+      userProfile.city &&
+      userProfile.pincode
+    );
+  };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
@@ -43,8 +104,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       return { error: null };
-    } catch (error: any) {
-      return { error };
+    } catch (error) {
+      return { error: error as Error };
     }
   };
 
@@ -52,8 +113,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { error: null };
-    } catch (error: any) {
-      return { error };
+    } catch (error) {
+      return { error: error as Error };
     }
   };
 
@@ -62,16 +123,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userProfile, 
+      loading, 
+      profileLoading, 
+      signUp, 
+      signIn, 
+      signOut, 
+      loadUserProfile,
+      isProfileComplete 
+    }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
+

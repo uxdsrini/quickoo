@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ShopCard } from '../components/ShopCard';
-import { Store, Loader2, Search } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { Store, Loader2, Search, Clock, MapPin, AlertCircle } from 'lucide-react';
 import * as React from "react"
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
@@ -34,16 +35,38 @@ interface Shop {
 
 interface HomePageProps {
   onShopSelect: (shopId: string) => void;
+  onNavigateToProfile?: () => void;
 }
 
-export function HomePage({ onShopSelect }: HomePageProps) {
+export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
+  const { user, isProfileComplete, loading: authLoading } = useAuth();
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
 
   useEffect(() => {
     loadShops();
   }, []);
+
+  // Show welcome popup for new users
+  useEffect(() => {
+    if (user && !authLoading) {
+      const hasSeenWelcome = localStorage.getItem(`welcome-seen-${user.uid}`);
+      if (!hasSeenWelcome) {
+        setShowWelcomePopup(true);
+      }
+    }
+  }, [user, authLoading]);
+
+  const handleWelcomeClose = () => {
+    if (user) {
+      localStorage.setItem(`welcome-seen-${user.uid}`, 'true');
+    }
+    setShowWelcomePopup(false);
+  };
+
+  // No automatic redirect - let users browse even with incomplete profiles
 
   const loadShops = async () => {
     try {
@@ -82,7 +105,7 @@ export function HomePage({ onShopSelect }: HomePageProps) {
     return matchesName || matchesCategory;
   });
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
@@ -99,6 +122,31 @@ export function HomePage({ onShopSelect }: HomePageProps) {
         </div>
         <p className="text-gray-600">Browse local grocery stores and order fresh products online</p>
       </div>
+
+      {/* Profile Completion Banner */}
+      {user && !isProfileComplete() && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <Store className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-900">Complete Your Profile</h3>
+                <p className="text-sm text-amber-800">
+                  Add your delivery details to enjoy seamless checkout experience
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onNavigateToProfile}
+              className="bg-amber-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-amber-700 transition-colors"
+            >
+              Complete Now
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="mb-6">
@@ -140,6 +188,66 @@ export function HomePage({ onShopSelect }: HomePageProps) {
               onClick={() => onShopSelect(shop.id)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Welcome Popup for New Users */}
+      {showWelcomePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Store className="w-8 h-8 text-emerald-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Welcome to GroceryMart! 🎉
+                </h3>
+                <p className="text-gray-600">
+                  We're excited to serve you with fresh groceries from local shops
+                </p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                  <MapPin className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-blue-900">Local Shop Delivery</p>
+                    <p className="text-xs text-blue-800">
+                      We deliver fresh products from trusted local grocery stores in your area
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                  <Clock className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-green-900">Delivery Hours</p>
+                    <p className="text-xs text-green-800">
+                      Our delivery service operates between <strong>7:00 AM to 7:00 PM</strong> daily
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-900">Delivery Notice</p>
+                    <p className="text-xs text-amber-800">
+                      Delivery may be delayed due to high order volume or weather conditions. We appreciate your patience!
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleWelcomeClose}
+                className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                Got it! Let's Shop
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
