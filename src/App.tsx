@@ -9,7 +9,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AuthPage } from './pages/AuthPage';
-import { ShoppingBag, ShoppingCart, Package, User as UserIcon, Home } from 'lucide-react';
+import { ShoppingCart, Package, User as UserIcon, Home } from 'lucide-react';
 
 type Page = 'home' | 'shop' | 'cart' | 'checkout' | 'orders' | 'profile' | 'auth';
 
@@ -126,8 +126,12 @@ function AppContent() {
               onClick={() => setCurrentPage('home')}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
-              <ShoppingBag className="w-8 h-8 text-emerald-600" />
-              <h1 className="text-2xl font-bold text-gray-900">GroceryMart</h1>
+              <img 
+                src="/apple-touch-icon.png" 
+                alt="Logo" 
+                className="w-8 h-8 rounded-lg" 
+              />
+              <h1 className="text-2xl font-bold text-gray-900">Quick</h1>
             </button>
             <div className="flex items-center gap-4">
               {user ? (

@@ -88,22 +88,77 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
 
     const getLocationName = async (lat: number, lng: number) => {
       try {
-        // Using OpenStreetMap Nominatim API (free, no API key required)
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`
-        );
+        // Try multiple geocoding services as fallbacks
         
-        if (response.ok) {
-          const data = await response.json();
-          const city = data.address?.city || 
-                      data.address?.town || 
-                      data.address?.village || 
-                      data.address?.county || 
-                      'Your Location';
-          setLocationName(city);
-        } else {
-          setLocationName('Your Location');
+        // Method 1: Try BigDataCloud (free, no API key, CORS-friendly)
+        try {
+          const response = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const city = data.city || data.locality || data.principalSubdivision || 'Your Location';
+            if (city && city !== 'Your Location') {
+              setLocationName(city);
+              return;
+            }
+          }
+        } catch {
+          console.log('BigDataCloud failed, trying fallback...');
         }
+
+        // Method 2: Try Nominatim with proper headers
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
+            {
+              headers: {
+                'User-Agent': 'GroceryMart/1.0',
+              },
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            const city = data.address?.city || 
+                        data.address?.town || 
+                        data.address?.village || 
+                        data.address?.county || 
+                        'Your Location';
+            if (city && city !== 'Your Location') {
+              setLocationName(city);
+              return;
+            }
+          }
+        } catch {
+          console.log('Nominatim failed, trying final fallback...');
+        }
+
+        // Method 3: Use a simple coordinate-based city approximation for India
+        const indianCities = [
+          { name: 'Mumbai', lat: 19.0760, lng: 72.8777, radius: 0.5 },
+          { name: 'Delhi', lat: 28.6139, lng: 77.2090, radius: 0.5 },
+          { name: 'Bangalore', lat: 12.9716, lng: 77.5946, radius: 0.5 },
+          { name: 'Hyderabad', lat: 17.3850, lng: 78.4867, radius: 0.5 },
+          { name: 'Chennai', lat: 13.0827, lng: 80.2707, radius: 0.5 },
+          { name: 'Kolkata', lat: 22.5726, lng: 88.3639, radius: 0.5 },
+          { name: 'Pune', lat: 18.5204, lng: 73.8567, radius: 0.5 },
+          { name: 'Ahmedabad', lat: 23.0225, lng: 72.5714, radius: 0.5 },
+        ];
+
+        for (const city of indianCities) {
+          const distance = Math.sqrt(
+            Math.pow(lat - city.lat, 2) + Math.pow(lng - city.lng, 2)
+          );
+          if (distance < city.radius) {
+            setLocationName(city.name);
+            return;
+          }
+        }
+
+        // Fallback: set generic location
+        setLocationName('Your Location');
       } catch (error) {
         console.error('Geocoding error:', error);
         setLocationName('Your Location');

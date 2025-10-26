@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Loader2, ShoppingBag, Mail, Lock, User, X, FileText } from 'lucide-react';
+import { Loader2, Mail, Lock, User, X, FileText } from 'lucide-react';
 
 interface AuthPageProps {
   onSignUpSuccess?: () => void;
@@ -63,12 +63,8 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <ShoppingBag className="w-10 h-10 text-emerald-600" />
-            <h1 className="text-3xl font-bold text-gray-900">GroceryMart</h1>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="text-center mb-4">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
             {isSignUp ? 'Create an Account' : 'Welcome Back'}
           </h2>
           <p className="text-gray-600">
