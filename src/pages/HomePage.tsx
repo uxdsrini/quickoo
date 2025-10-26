@@ -47,6 +47,9 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [locationName, setLocationName] = useState('Your Location');
   const [locationLoading, setLocationLoading] = useState(false);
   const [showDeliveryCard, setShowDeliveryCard] = useState(true);
+  const [showServiceAlert, setShowServiceAlert] = useState(false);
+  const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
+  const [serviceAvailable, setServiceAvailable] = useState(true);
 
   useEffect(() => {
     loadShops();
@@ -59,11 +62,34 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
       if (!hasSeenWelcome) {
         setShowWelcomePopup(true);
       }
+      
+      // Check if location was previously denied and show alert for newly logged-in users
+      if (locationName === 'Location access denied' || locationName === 'Location unavailable') {
+        setShowLocationPermissionAlert(true);
+      }
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, locationName]);
 
   // Request location permission on component mount
   useEffect(() => {
+    const checkServiceAvailability = (city: string) => {
+      // Check if service is available in the user's location
+      const availableCities = ['Ramagiri', 'ramagiri', 'RAMAGIRI'];
+      const isAvailable = availableCities.some(availableCity => 
+        city.toLowerCase().includes(availableCity.toLowerCase()) ||
+        availableCity.toLowerCase().includes(city.toLowerCase())
+      );
+      
+      setServiceAvailable(isAvailable);
+      
+      // Show service unavailability alert only for logged-in users
+      if (user && !isAvailable && city !== 'Your Location' && city !== 'Location unavailable') {
+        setShowServiceAlert(true);
+      }
+      
+      return isAvailable;
+    };
+
     const getCurrentLocation = () => {
       setLocationLoading(true);
       
@@ -75,7 +101,17 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
         },
         (error) => {
           console.error('Location error:', error);
-          setLocationName('Location unavailable');
+          
+          // Handle different error types
+          if (error.code === error.PERMISSION_DENIED) {
+            setLocationName('Location access denied');
+            if (user) {
+              setShowLocationPermissionAlert(true);
+            }
+          } else {
+            setLocationName('Location unavailable');
+          }
+          
           setLocationLoading(false);
         },
         {
@@ -101,6 +137,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
             const city = data.city || data.locality || data.principalSubdivision || 'Your Location';
             if (city && city !== 'Your Location') {
               setLocationName(city);
+              checkServiceAvailability(city);
               return;
             }
           }
@@ -128,6 +165,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                         'Your Location';
             if (city && city !== 'Your Location') {
               setLocationName(city);
+              checkServiceAvailability(city);
               return;
             }
           }
@@ -153,6 +191,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
           );
           if (distance < city.radius) {
             setLocationName(city.name);
+            checkServiceAvailability(city.name);
             return;
           }
         }
@@ -180,6 +219,9 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
           getCurrentLocation();
         } else {
           setLocationName('Location access denied');
+          if (user) {
+            setShowLocationPermissionAlert(true);
+          }
         }
       } catch {
         // Fallback for browsers that don't support permissions API
@@ -188,7 +230,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     };
 
     requestLocation();
-  }, []);
+  }, [user]);
 
   const handleWelcomeClose = () => {
     if (user) {
@@ -242,6 +284,123 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+      </div>
+    );
+  }
+
+  // If location access is denied, show permission request page
+  if (locationName === 'Location access denied') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MapPin className="w-12 h-12 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Location Permission Required 📍
+          </h2>
+          <p className="text-gray-600 mb-6">
+            We need your location to check service availability and provide you with the best shopping experience.
+          </p>
+          
+          <div className="bg-green-50 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-green-900 mb-3">Why we need your location:</h3>
+            <ul className="text-sm text-green-800 text-left space-y-2">
+              <li>• Check if delivery is available in your area</li>
+              <li>• Show nearby grocery stores</li>
+              <li>• Provide accurate delivery estimates</li>
+              <li>• Ensure seamless order placement</li>
+            </ul>
+            
+            <div className="mt-4 pt-4 border-t border-green-200">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <h4 className="font-semibold text-yellow-900 mb-2 flex items-center gap-1">
+                  💡 Alternative method:
+                </h4>
+                <p className="text-sm text-yellow-800 leading-relaxed font-medium">
+                  You can also click the <strong className="bg-yellow-200 px-1 rounded">info icon (🛡️ or ℹ️)</strong> beside the URL in your browser's address bar, 
+                  then find <strong className="bg-yellow-200 px-1 rounded">"Location"</strong> settings and change it to <strong className="bg-yellow-200 px-1 rounded">"Allow"</strong> to enable location access.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                // First request location permission explicitly
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    () => {
+                      // Success - reload page to update location
+                      window.location.reload();
+                    },
+                    (error) => {
+                      console.log('Location request result:', error);
+                      // Even if denied, reload to update the state
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
+                    },
+                    {
+                      enableHighAccuracy: true,
+                      timeout: 10000,
+                      maximumAge: 0 // Force fresh request
+                    }
+                  );
+                } else {
+                  // No geolocation support, just reload
+                  window.location.reload();
+                }
+              }}
+              className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+            >
+              Enable Location & Reload Page
+            </button>
+            <p className="text-xs text-gray-500">
+              Click "Allow" when your browser asks for location permission
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is in a location other than Ramagiri, show service unavailable page
+  if (user && locationName !== 'Your Location' && locationName !== 'Location unavailable' && locationName !== 'Getting location...' && !serviceAvailable) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <div className="text-center">
+          <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <MapPin className="w-12 h-12 text-orange-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Service Not Available 📍
+          </h2>
+          <p className="text-gray-600 mb-6">
+            We're sorry, but we don't have service available at <strong>{locationName}</strong> yet.
+          </p>
+          
+          <div className="bg-blue-50 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-2">We're expanding soon!</h3>
+            <p className="text-sm text-blue-800">
+              We'll notify you as soon as we start delivering to your area. Thanks for your interest! 🙏
+            </p>
+          </div>
+
+          <div className="bg-green-50 rounded-lg p-6 mb-6">
+            <p className="text-sm text-green-800">
+              <strong>Currently serving:</strong> Ramagiri and surrounding areas
+            </p>
+          </div>
+
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+          >
+            Refresh Location
+          </button>
+        </div>
       </div>
     );
   }
@@ -433,6 +592,93 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
               >
                 Got it! Let's Shop
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Service Unavailability Alert */}
+      {showServiceAlert && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-8 h-8 text-orange-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Service Not Available 📍
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  We are not available at <strong>{locationName}</strong> yet, but we're expanding soon!
+                </p>
+                <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-blue-800">
+                    We'll update you as soon as we start delivering to your area. Thanks for visiting! 🙏
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowServiceAlert(false)}
+                className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                Got it, Thanks!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Location Permission Alert */}
+      {showLocationPermissionAlert && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Location Permission Needed 📍
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Please allow location access to ensure seamless ordering experience.
+                </p>
+                <div className="bg-green-50 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-green-800 mb-2">
+                    <strong>Why we need location:</strong>
+                  </p>
+                  <ul className="text-xs text-green-700 text-left space-y-1">
+                    <li>• Check service availability in your area</li>
+                    <li>• Show nearby grocery stores</li>
+                    <li>• Provide accurate delivery estimates</li>
+                    <li>• Ensure seamless order placement</li>
+                  </ul>
+                </div>
+                <p className="text-xs text-gray-500">
+                  You can enable location in your browser settings or by clicking the location icon in the address bar.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowLocationPermissionAlert(false);
+                    // Reload the page to trigger location request again
+                    window.location.reload();
+                  }}
+                  className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+                >
+                  Allow Location Access
+                </button>
+                <button
+                  onClick={() => setShowLocationPermissionAlert(false)}
+                  className="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Maybe Later
+                </button>
+              </div>
             </div>
           </div>
         </div>
