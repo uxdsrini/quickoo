@@ -303,7 +303,7 @@ export function CheckoutPage({ onSuccess, onBack }: CheckoutPageProps) {
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900">UPI Payment</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm text-gray-500">UPI ID: 830991303@sbi</p>
+                    <p className="text-sm text-gray-500">Call me 9963650466</p>
                     <button
                       type="button"
                       onClick={(e) => {

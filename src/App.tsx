@@ -70,6 +70,7 @@ function AppContent() {
           <ShopDetailPage
             shopId={selectedShopId}
             onBack={() => setCurrentPage('home')}
+            onNavigateToCart={() => setCurrentPage('cart')}
           />
         ) : (
           <HomePage onShopSelect={handleShopSelect} />

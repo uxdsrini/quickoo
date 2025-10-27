@@ -75,7 +75,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowDeliveryCard(false);
-    }, 2000); // Hide after 2 seconds
+    }, 4000); // Hide after 2 seconds
 
     return () => clearTimeout(timer); // Cleanup timer on unmount
   }, []); // Empty dependency array means it runs once on mount

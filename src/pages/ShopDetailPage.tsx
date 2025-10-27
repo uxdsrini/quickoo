@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ProductCard } from '../components/ProductCard';
-import { ArrowLeft, Store, MapPin, Star, Loader2 } from 'lucide-react';
+import { useCart } from '../contexts/CartContext';
+import { ArrowLeft, Store, MapPin, Star, Loader2, ChevronRight } from 'lucide-react';
 
 interface Shop {
   id: string;
@@ -30,9 +31,11 @@ interface Product {
 interface ShopDetailPageProps {
   shopId: string;
   onBack: () => void;
+  onNavigateToCart?: () => void;
 }
 
-export function ShopDetailPage({ shopId, onBack }: ShopDetailPageProps) {
+export function ShopDetailPage({ shopId, onBack, onNavigateToCart }: ShopDetailPageProps) {
+  const { getTotalItems } = useCart();
   const [shop, setShop] = useState<Shop | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +188,29 @@ export function ShopDetailPage({ shopId, onBack }: ShopDetailPageProps) {
           {products.map(product => (
             <ProductCard key={product.id} product={product} />
           ))}
+        </div>
+      )}
+
+      {/* Cart Notification Card */}
+      {getTotalItems() > 0 && (
+        <div className="fixed bottom-20 left-4 right-4 z-50">
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl p-4 shadow-lg backdrop-blur-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs opacity-90 mb-1 font-light">Deal of the Day unlocked! Saving ₹690</p>
+                <p className="text-base font-medium">
+                  {getTotalItems()} {getTotalItems() === 1 ? 'Item' : 'Items'} added
+                </p>
+              </div>
+              <button 
+                onClick={() => onNavigateToCart?.()}
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl transition-colors"
+              >
+                <span className="text-sm font-medium">View Cart</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
