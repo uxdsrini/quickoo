@@ -15,7 +15,7 @@ import logoSvg from './assets/logo.svg';
 type Page = 'home' | 'shop' | 'cart' | 'checkout' | 'orders' | 'profile' | 'auth';
 
 function AppContent() {
-  const { user, isProfileComplete, loading } = useAuth();
+  const { user, userProfile, isProfileComplete, loading } = useAuth();
   const { getTotalItems } = useCart();
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
@@ -138,7 +138,9 @@ function AppContent() {
               {user ? (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <UserIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{user.email}</span>
+                  {userProfile && isProfileComplete() ? (
+                    <span className="hidden sm:inline">{userProfile.fullName}</span>
+                  ) : null}
                 </div>
               ) : (
                 <button

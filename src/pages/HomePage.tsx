@@ -50,6 +50,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [showServiceAlert, setShowServiceAlert] = useState(false);
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
   const [serviceAvailable, setServiceAvailable] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
     loadShops();
@@ -269,15 +270,73 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     }
   };
 
-  // Filter shops based on search query
+  // Category mappings
+  const categories = [
+    {
+      id: 'food-delivery',
+      name: 'Food Delivery',
+      icon: '🍕',
+      color: 'bg-orange-100 text-orange-600',
+      stores: ['Tiffin Centers', 'Restaurants', 'Fast Food']
+    },
+    {
+      id: 'quickmart',
+      name: 'QuickMart',
+      icon: '🛒',
+      color: 'bg-emerald-100 text-emerald-600',
+      stores: ['Grocery Stores', 'Supermarket', 'General Store']
+    },
+    {
+      id: 'meat-delivery',
+      name: 'Meat Delivery',
+      icon: '🥩',
+      color: 'bg-red-100 text-red-600',
+      stores: ['Meat Shop', 'Butcher', 'Non-Veg']
+    },
+    {
+      id: 'pooja-store',
+      name: 'Pooja Store',
+      icon: '🪔',
+      color: 'bg-amber-100 text-amber-600',
+      stores: ['Pooja Items', 'Religious Store', 'Temple Store']
+    },
+    {
+      id: 'snack-delivery',
+      name: 'Snack Delivery',
+      icon: '🧁',
+      color: 'bg-pink-100 text-pink-600',
+      stores: ['Bakery', 'Sweet Shop', 'Snacks']
+    },
+    {
+      id: 'vegetable-delivery',
+      name: 'Vegetable Delivery',
+      icon: '🥬',
+      color: 'bg-green-100 text-green-600',
+      stores: ['Vegetable Market', 'Fresh Vegetables', 'Organic Store']
+    }
+  ];
+
+  // Filter shops based on search query and selected category
   const filteredShops = shops.filter(shop => {
+    // First apply search filter
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return true;
-    
-    const matchesName = shop.name.toLowerCase().includes(query);
-    const matchesCategory = shop.category?.toLowerCase().includes(query);
-    
-    return matchesName || matchesCategory;
+    const matchesSearch = !query || 
+      shop.name.toLowerCase().includes(query) || 
+      shop.category?.toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+
+    // Then apply category filter
+    if (!selectedCategory) return true;
+
+    const category = categories.find(cat => cat.id === selectedCategory);
+    if (!category) return true;
+
+    // Check if shop's category matches any of the category's store types
+    return category.stores.some(storeType => 
+      shop.category?.toLowerCase().includes(storeType.toLowerCase()) ||
+      storeType.toLowerCase().includes(shop.category?.toLowerCase() || '')
+    );
   });
 
   if (loading || authLoading) {
@@ -510,6 +569,67 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
           <p className="text-sm text-gray-600 mt-2">
             Found {filteredShops.length} {filteredShops.length === 1 ? 'store' : 'stores'}
           </p>
+        )}
+      </div>
+
+      {/* Category Cards Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">What are you looking for?</h2>
+          {selectedCategory && (
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+            >
+              View All
+            </button>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
+              className={`group relative bg-white border-2 rounded-xl p-4 transition-all duration-200 hover:shadow-md ${
+                selectedCategory === category.id 
+                  ? 'border-emerald-500 bg-emerald-50 shadow-md' 
+                  : 'border-gray-100 hover:border-emerald-200'
+              }`}
+            >
+              <div className="text-center">
+                <div className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center text-2xl ${
+                  selectedCategory === category.id ? 'bg-emerald-100' : category.color
+                }`}>
+                  {category.icon}
+                </div>
+                <h3 className={`text-sm font-semibold ${
+                  selectedCategory === category.id ? 'text-emerald-700' : 'text-gray-900'
+                }`}>
+                  {category.name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  {category.stores.join(', ')}
+                </p>
+              </div>
+              
+              {/* Selection indicator */}
+              {selectedCategory === category.id && (
+                <div className="absolute top-2 right-2 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full"></div>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+        
+        {selectedCategory && (
+          <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+            <p className="text-sm text-emerald-800">
+              <span className="font-semibold">Showing stores for:</span> {categories.find(cat => cat.id === selectedCategory)?.name}
+              <span className="ml-2 text-emerald-600">({filteredShops.length} {filteredShops.length === 1 ? 'store' : 'stores'} found)</span>
+            </p>
+          </div>
         )}
       </div>
 
