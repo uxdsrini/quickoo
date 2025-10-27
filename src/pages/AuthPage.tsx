@@ -19,20 +19,79 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsPopup, setShowTermsPopup] = useState(false);
+  const [errors, setErrors] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    fullName: '',
+    terms: '',
+    general: '', // For general auth errors
+  });
+
+  // Email validation function
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validate form fields
+  const validateForm = () => {
+    const newErrors = {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      fullName: '',
+      terms: '',
+      general: '',
+    };
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    // Sign up specific validations
+    if (isSignUp) {
+      // Full name validation
+      if (!formData.fullName.trim()) {
+        newErrors.fullName = 'Full name is required';
+      }
+
+      // Confirm password validation
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = 'Please confirm your password';
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      }
+
+      // Terms validation
+      if (!termsAccepted) {
+        newErrors.terms = 'You must accept the Terms and Conditions';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.values(newErrors).every(error => error === '');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation for signup
-    if (isSignUp) {
-      if (formData.password !== formData.confirmPassword) {
-        alert('Passwords do not match!');
-        return;
-      }
-      if (!termsAccepted) {
-        alert('Please accept the Terms and Conditions to continue.');
-        return;
-      }
+    // Clear any previous general errors
+    setErrors(prev => ({ ...prev, general: '' }));
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
     }
     
     setLoading(true);
@@ -54,8 +113,30 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
         }
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'An error occurred. Please try again.';
-      alert(message);
+      let errorMessage = 'An error occurred. Please try again.';
+      
+      if (error instanceof Error) {
+        // Handle specific Firebase auth errors
+        if (error.message.includes('auth/invalid-credential') || 
+            error.message.includes('auth/user-not-found') ||
+            error.message.includes('auth/wrong-password')) {
+          errorMessage = !isSignUp 
+            ? "We don't have this email registered with us. Please sign up or check your credentials."
+            : 'Invalid credentials. Please try again.';
+        } else if (error.message.includes('auth/email-already-in-use')) {
+          errorMessage = 'This email is already registered. Please sign in instead.';
+        } else if (error.message.includes('auth/weak-password')) {
+          errorMessage = 'Password is too weak. Please choose a stronger password.';
+        } else if (error.message.includes('auth/invalid-email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (error.message.includes('auth/too-many-requests')) {
+          errorMessage = 'Too many failed attempts. Please try again later.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setErrors(prev => ({ ...prev, general: errorMessage }));
       setLoading(false);
     }
   };
@@ -80,49 +161,76 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <User className="w-4 h-4 inline mr-1" />
-                  Full Name
+                  Full Name *
                 </label>
                 <input
                   type="text"
-                  required
                   value={formData.fullName}
-                  onChange={e => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  onChange={e => {
+                    setFormData({ ...formData, fullName: e.target.value });
+                    if (errors.fullName) {
+                      setErrors({ ...errors, fullName: '' });
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                    errors.fullName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Enter your full name"
                 />
+                {errors.fullName && (
+                  <p className="text-xs text-red-500 mt-1">{errors.fullName}</p>
+                )}
               </div>
             )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Mail className="w-4 h-4 inline mr-1" />
-                Email Address
+                Email Address *
               </label>
               <input
                 type="email"
-                required
                 value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                onChange={e => {
+                  setFormData({ ...formData, email: e.target.value });
+                  if (errors.email) {
+                    setErrors({ ...errors, email: '' });
+                  }
+                }}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                  errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Enter your email"
               />
+              {errors.email && (
+                <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <Lock className="w-4 h-4 inline mr-1" />
-                Password
+                Password *
               </label>
               <input
                 type="password"
-                required
                 value={formData.password}
-                onChange={e => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                onChange={e => {
+                  setFormData({ ...formData, password: e.target.value });
+                  if (errors.password) {
+                    setErrors({ ...errors, password: '' });
+                  }
+                }}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                  errors.password ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Enter your password"
                 minLength={6}
               />
-              {isSignUp && (
+              {errors.password && (
+                <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+              )}
+              {isSignUp && !errors.password && (
                 <p className="text-xs text-gray-500 mt-1">
                   Password must be at least 6 characters
                 </p>
@@ -133,44 +241,68 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Lock className="w-4 h-4 inline mr-1" />
-                  Confirm Password
+                  Confirm Password *
                 </label>
                 <input
                   type="password"
-                  required
                   value={formData.confirmPassword}
-                  onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  onChange={e => {
+                    setFormData({ ...formData, confirmPassword: e.target.value });
+                    if (errors.confirmPassword) {
+                      setErrors({ ...errors, confirmPassword: '' });
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                    errors.confirmPassword ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Confirm your password"
                   minLength={6}
                 />
-                {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Passwords do not match
-                  </p>
+                {errors.confirmPassword && (
+                  <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
                 )}
               </div>
             )}
 
             {isSignUp && (
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 mt-1"
-                />
-                <label htmlFor="terms" className="text-sm text-gray-700">
-                  I agree to the{' '}
-                  <button
-                    type="button"
-                    onClick={() => setShowTermsPopup(true)}
-                    className="text-emerald-600 hover:text-emerald-700 underline"
-                  >
-                    Terms and Conditions
-                  </button>
-                </label>
+              <div>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={termsAccepted}
+                    onChange={(e) => {
+                      setTermsAccepted(e.target.checked);
+                      if (errors.terms) {
+                        setErrors({ ...errors, terms: '' });
+                      }
+                    }}
+                    className={`w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 mt-1 ${
+                      errors.terms ? 'border-red-300' : ''
+                    }`}
+                  />
+                  <label htmlFor="terms" className="text-sm text-gray-700">
+                    I agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowTermsPopup(true)}
+                      className="text-emerald-600 hover:text-emerald-700 underline"
+                    >
+                      Terms and Conditions
+                    </button>
+                    {' *'}
+                  </label>
+                </div>
+                {errors.terms && (
+                  <p className="text-xs text-red-500 mt-1">{errors.terms}</p>
+                )}
+              </div>
+            )}
+
+            {/* General error message */}
+            {errors.general && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{errors.general}</p>
               </div>
             )}
 
@@ -198,6 +330,7 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
                 setIsSignUp(!isSignUp);
                 setFormData({ email: '', password: '', confirmPassword: '', fullName: '' });
                 setTermsAccepted(false);
+                setErrors({ email: '', password: '', confirmPassword: '', fullName: '', terms: '', general: '' });
               }}
               className="text-emerald-600 hover:text-emerald-700 font-medium"
             >

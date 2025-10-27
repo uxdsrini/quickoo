@@ -3,7 +3,7 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { ShopCard } from '../components/ShopCard';
 import { useAuth } from '../hooks/useAuth';
-import { Store, Loader2, Search, Clock, MapPin, AlertCircle, X } from 'lucide-react';
+import { Store, Loader2, Search, Clock, MapPin, AlertCircle, X, ChevronDown } from 'lucide-react';
 import * as React from "react"
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>
@@ -53,6 +53,47 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [, setCurrentBannerIndex] = useState(0);
   const [showDeliveryCard, setShowDeliveryCard] = useState(true);
+  
+  // Comprehensive list of Indian cities and locations
+  const indianLocations = [
+    // Major Metro Cities
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad',
+    // State Capitals
+    'Lucknow', 'Jaipur', 'Bhopal', 'Thiruvananthapuram', 'Gandhi Nagar', 'Chandigarh', 'Guwahati', 'Ranchi',
+    'Raipur', 'Bhubaneswar', 'Dehradun', 'Shimla', 'Jammu', 'Srinagar', 'Itanagar', 'Dispur',
+    'Imphal', 'Shillong', 'Aizawl', 'Kohima', 'Gangtok', 'Agartala', 'Port Blair',
+    // Tier 2 Cities
+    'Surat', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Visakhapatnam', 'Patna', 'Vadodara',
+    'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Kalyan-Dombivli',
+    'Vasai-Virar', 'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai',
+    'Allahabad', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur', 'Gwalior', 'Vijayawada', 'Jodhpur',
+    'Madurai', 'Raipur', 'Kota', 'Guwahati', 'Chandigarh', 'Solapur', 'Hubballi-Dharwad', 'Tiruchirappalli',
+    'Bareilly', 'Mysore', 'Tiruppur', 'Gurgaon', 'Aligarh', 'Jalandhar', 'Bhubaneswar', 'Salem',
+    'Mira-Bhayandar', 'Warangal', 'Guntur', 'Bhiwandi', 'Saharanpur', 'Gorakhpur', 'Bikaner', 'Amravati',
+    'Noida', 'Jamshedpur', 'Bhilai', 'Cuttack', 'Firozabad', 'Kochi', 'Nellore', 'Bhavnagar',
+    // Popular Areas and Neighborhoods
+    'Andheri', 'Bandra', 'Powai', 'Goregaon', 'Malad', 'Kandivali', 'Borivali', 'Vikhroli', 'Ghatkopar',
+    'Kurla', 'Mulund', 'Thane West', 'Dombivli', 'Kalyan', 'Navi Mumbai', 'Panvel', 'Kharghar',
+    'Connaught Place', 'Karol Bagh', 'Lajpat Nagar', 'Saket', 'Dwarka', 'Rohini', 'Janakpuri',
+    'Pitampura', 'Laxmi Nagar', 'Mayur Vihar', 'Vasant Kunj', 'Greater Kailash', 'Defence Colony',
+    'Koramangala', 'Indiranagar', 'Whitefield', 'Electronic City', 'Marathahalli', 'BTM Layout',
+    'J P Nagar', 'Jayanagar', 'Rajajinagar', 'Malleshwaram', 'Basavanagudi', 'Yelahanka',
+    'Banjara Hills', 'Jubilee Hills', 'Madhapur', 'Gachibowli', 'Kondapur', 'Kukatpally', 'Secunderabad',
+    'T Nagar', 'Anna Nagar', 'Adyar', 'Velachery', 'Tambaram', 'Chrompet', 'Porur', 'OMR',
+    'Salt Lake', 'New Town', 'Ballygunge', 'Park Street', 'Gariahat', 'Behala', 'Rajarhat',
+    // Telangana specific
+    'Ramagiri', 'Karimnagar', 'Nizamabad', 'Khammam', 'Mahabubnagar', 'Nalgonda', 'Adilabad', 'Medak',
+    'Warangal', 'Siddipet', 'Sangareddy', 'Vikarabad', 'Yadadri', 'Jagitial', 'Rajanna Sircilla',
+    'Kamareddy', 'Mahabubabad', 'Suryapet', 'Bhongir', 'Jangaon', 'Jayashankar', 'Mulugu', 'Bhadradri',
+    'Asifabad', 'Mancherial', 'Nirmal', 'Nagarkurnool', 'Wanaparthy', 'Narayanpet', 'Jogulamba Gadwal'
+  ];
+
+  // Filter locations based on search query
+  const filteredLocations = locationSearchQuery.trim() 
+    ? indianLocations.filter(location => 
+        location.toLowerCase().includes(locationSearchQuery.toLowerCase().trim())
+      ).slice(0, 10) // Limit to 10 results for performance
+    : [];
 
   // Banner data
   const banners = [
@@ -473,7 +514,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                 className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors flex items-center gap-1"
               >
                 {locationName}
-                <Search className="w-3 h-3 opacity-60" />
+                <ChevronDown className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -539,12 +580,65 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                   <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
                     type="text"
-                    placeholder="Try J P Nagar, Andheri West etc..."
+                    placeholder="Search your location"
                     value={locationSearchQuery}
                     onChange={(e) => setLocationSearchQuery(e.target.value)}
                     className="pl-12 pr-4 py-4 text-base border-2 border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-0"
                   />
                 </div>
+
+                {/* Search Results */}
+                {filteredLocations.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                      SEARCH RESULTS
+                    </h3>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {filteredLocations.map((location, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            const isServiceAvailable = location.toLowerCase().includes('ramagiri');
+                            setLocationName(location);
+                            setServiceAvailable(isServiceAvailable);
+                            setLocationSearchQuery('');
+                            setShowLocationSelector(false);
+                          }}
+                          className="flex items-start gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
+                        >
+                          <MapPin className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{location}</div>
+                            <div className="text-sm text-gray-500">
+                              {location.toLowerCase().includes('ramagiri') ? 'Service Available' : 'Service not available'}
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium">
+                            {location.toLowerCase().includes('ramagiri') ? (
+                              <span className="text-emerald-600">Available</span>
+                            ) : (
+                              <span className="text-red-500">Not Available</span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Show "No results" message when search query exists but no results */}
+                {locationSearchQuery.trim() && filteredLocations.length === 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                      SEARCH RESULTS
+                    </h3>
+                    <div className="text-center py-8">
+                      <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-2">No locations found</p>
+                      <p className="text-sm text-gray-400">Try searching for a different city or area</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Use Current Location Button */}
                 <button
@@ -561,53 +655,61 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                 </button>
 
                 {/* Available Locations */}
-                <div className="mb-8">
-                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
-                    AVAILABLE LOCATIONS
-                  </h3>
-                  
-                  <button
-                    onClick={() => {
-                      setLocationName('Ramagiri');
-                      setServiceAvailable(true);
-                      setShowLocationSelector(false);
-                    }}
-                    className="flex items-start gap-3 w-full p-4 text-left hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-200"
-                  >
-                    <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">Ramagiri</div>
-                      <div className="text-sm text-emerald-600">Service Available • Full Menu</div>
-                    </div>
-                    <div className="text-sm text-emerald-600 font-medium">
-                      Select
-                    </div>
-                  </button>
-                </div>
+                {!locationSearchQuery.trim() && (
+                  <div className="mb-8">
+                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                      AVAILABLE LOCATIONS
+                    </h3>
+                    
+                    <button
+                      onClick={() => {
+                        setLocationName('Ramagiri');
+                        setServiceAvailable(true);
+                        setShowLocationSelector(false);
+                      }}
+                      className="flex items-start gap-3 w-full p-4 text-left hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-200"
+                    >
+                      <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">Ramagiri</div>
+                        <div className="text-sm text-emerald-600">Service Available • Full Menu</div>
+                      </div>
+                      <div className="text-sm text-emerald-600 font-medium">
+                        Select
+                      </div>
+                    </button>
+                  </div>
+                )}
 
                 {/* Current Location (Not Available) */}
-                <div className="mb-8">
-                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
-                    DETECTED LOCATION
-                  </h3>
-                  
-                  <div className="flex items-start gap-3 w-full p-4 rounded-xl bg-gray-50 opacity-60">
-                    <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{locationName}</div>
-                      <div className="text-sm text-red-600">Service not available</div>
-                    </div>
-                    <div className="text-sm text-red-500 font-medium">
-                      Not Available
+                {!locationSearchQuery.trim() && (
+                  <div className="mb-8">
+                    <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                      DETECTED LOCATION
+                    </h3>
+                    
+                    <div className="flex items-start gap-3 w-full p-4 rounded-xl bg-gray-50 opacity-60">
+                      <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{locationName}</div>
+                        <div className="text-sm text-red-600">Service not available</div>
+                      </div>
+                      <div className="text-sm text-red-500 font-medium">
+                        Not Available
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
     );
+  }
+
+  function copyUpiId() {
+    throw new Error('Function not implemented.');
   }
 
   return (
@@ -624,9 +726,10 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
           ) : (
             <button
               onClick={() => setShowLocationSelector(true)}
-              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors flex items-center gap-1"
             >
               {locationName}
+              <ChevronDown className="w-3 h-3" />
             </button>
           )}
         </div>
@@ -661,10 +764,20 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                     href="tel:9963650466" 
                     className="font-medium text-blue-700 hover:text-blue-800 underline"
                   >
-                    99636 50466
+                    +919963650466
                   </a>{' '}
                  *
                 </p>
+                <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        copyUpiId();
+                      }}
+                      className="text-blue-600 hover:text-blue-700 p-1 rounded transition-colors"
+                      title="Copy UPI ID"
+                    ></button>
               </div>
             </div>
             {/* Close Button */}
@@ -923,12 +1036,68 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Try J P Nagar, Andheri West etc..."
+                  placeholder="Search your location"
                   value={locationSearchQuery}
                   onChange={(e) => setLocationSearchQuery(e.target.value)}
                   className="pl-12 pr-4 py-4 text-base border-2 border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-0"
                 />
               </div>
+
+              {/* Search Results */}
+              {filteredLocations.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                    SEARCH RESULTS
+                  </h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {filteredLocations.map((location, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          const isServiceAvailable = location.toLowerCase().includes('ramagiri');
+                          setLocationName(location);
+                          setServiceAvailable(isServiceAvailable);
+                          setLocationSearchQuery('');
+                          setShowLocationSelector(false);
+                          if (!isServiceAvailable) {
+                            // Will trigger the service unavailable page
+                          }
+                        }}
+                        className="flex items-start gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
+                      >
+                        <MapPin className="w-5 h-5 text-gray-600 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">{location}</div>
+                          <div className="text-sm text-gray-500">
+                            {location.toLowerCase().includes('ramagiri') ? 'Service Available' : 'Service not available'}
+                          </div>
+                        </div>
+                        <div className="text-sm font-medium">
+                          {location.toLowerCase().includes('ramagiri') ? (
+                            <span className="text-emerald-600">Available</span>
+                          ) : (
+                            <span className="text-red-500">Not Available</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Show "No results" message when search query exists but no results */}
+              {locationSearchQuery.trim() && filteredLocations.length === 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                    SEARCH RESULTS
+                  </h3>
+                  <div className="text-center py-8">
+                    <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 mb-2">No locations found</p>
+                    <p className="text-sm text-gray-400">Try searching for a different city or area</p>
+                  </div>
+                </div>
+              )}
 
               {/* Use Current Location Button */}
               <button
