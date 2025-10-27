@@ -46,12 +46,41 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
   const [locationName, setLocationName] = useState('Your Location');
   const [locationLoading, setLocationLoading] = useState(false);
-  const [showDeliveryCard, setShowDeliveryCard] = useState(true);
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
   const [showLocationSelector, setShowLocationSelector] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [serviceAvailable, setServiceAvailable] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [, setCurrentBannerIndex] = useState(0);
+  const [showDeliveryCard, setShowDeliveryCard] = useState(true);
+
+  // Banner data
+  const banners = [
+    {
+      id: 1,
+      title: "Fresh Vegetables Daily",
+      subtitle: "Get 20% off on all fresh vegetables",
+      backgroundColor: "bg-gradient-to-r from-green-400 to-green-600",
+      textColor: "text-white",
+      image: "🥬"
+    },
+    {
+      id: 2,
+      title: "Premium Groceries",
+      subtitle: "Quality products at the best prices",
+      backgroundColor: "bg-gradient-to-r from-blue-400 to-blue-600",
+      textColor: "text-white",
+      image: "🛒"
+    },
+    {
+      id: 3,
+      title: "Fast Delivery",
+      subtitle: "Same day delivery within 2 hours",
+      backgroundColor: "bg-gradient-to-r from-orange-400 to-orange-600",
+      textColor: "text-white",
+      image: "⚡"
+    }
+  ];
 
   useEffect(() => {
     loadShops();
@@ -72,14 +101,14 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     }
   }, [user, authLoading, locationName]);
 
-  // Auto-hide delivery card after 2 seconds
+  // Auto-advance banner carousel
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowDeliveryCard(false);
-    }, 4000); // Hide after 2 seconds
+    const timer = setInterval(() => {
+      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
+    }, 5000); // Change banner every 5 seconds
 
-    return () => clearTimeout(timer); // Cleanup timer on unmount
-  }, []); // Empty dependency array means it runs once on mount
+    return () => clearInterval(timer);
+  }, [banners.length]);
 
   // Request location permission on component mount
   useEffect(() => {
@@ -809,7 +838,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
           {filteredShops.map(shop => (
             <ShopCard
               key={shop.id}
