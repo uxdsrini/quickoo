@@ -10,6 +10,7 @@ import { OrdersPage } from './pages/OrdersPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AuthPage } from './pages/AuthPage';
 import { ShoppingCart, Package, User as UserIcon, Home } from 'lucide-react';
+import logoSvg from './assets/logo.svg';
 
 type Page = 'home' | 'shop' | 'cart' | 'checkout' | 'orders' | 'profile' | 'auth';
 
@@ -127,7 +128,7 @@ function AppContent() {
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <img 
-                src="/" 
+                src={logoSvg} 
                 alt="Logo" 
                 className="w-8 h-8 rounded-lg" 
               />
