@@ -814,15 +814,6 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
             </button>
           ))}
         </div>
-        
-        {selectedCategory && (
-          <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-            <p className="text-sm text-emerald-800">
-              <span className="font-semibold">Showing stores for:</span> {categories.find(cat => cat.id === selectedCategory)?.name}
-              <span className="ml-2 text-emerald-600">({filteredShops.length} {filteredShops.length === 1 ? 'store' : 'stores'} found)</span>
-            </p>
-          </div>
-        )}
       </div>
 
       {filteredShops.length === 0 ? (
