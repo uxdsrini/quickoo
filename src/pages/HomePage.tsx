@@ -71,6 +71,15 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     }
   }, [user, authLoading, locationName]);
 
+  // Auto-hide delivery card after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowDeliveryCard(false);
+    }, 2000); // Hide after 2 seconds
+
+    return () => clearTimeout(timer); // Cleanup timer on unmount
+  }, []); // Empty dependency array means it runs once on mount
+
   // Request location permission on component mount
   useEffect(() => {
     const checkServiceAvailability = (city: string) => {
@@ -586,7 +595,48 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
           )}
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* Mobile: Horizontal scroll, Desktop: Grid */}
+        <div className="md:hidden">
+          <div className="flex overflow-x-auto scrollbar-hide gap-4 pb-2">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
+                className={`group relative bg-white border-2 rounded-xl p-4 transition-all duration-200 hover:shadow-md flex-shrink-0 w-32 ${
+                  selectedCategory === category.id 
+                    ? 'border-emerald-500 bg-emerald-50 shadow-md' 
+                    : 'border-gray-100 hover:border-emerald-200'
+                }`}
+              >
+                <div className="text-center">
+                  <div className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center text-2xl ${
+                    selectedCategory === category.id ? 'bg-emerald-100' : category.color
+                  }`}>
+                    {category.icon}
+                  </div>
+                  <h3 className={`text-sm font-semibold ${
+                    selectedCategory === category.id ? 'text-emerald-700' : 'text-gray-900'
+                  }`}>
+                    {category.name}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1 truncate">
+                    {category.stores.slice(0, 2).join(', ')}{category.stores.length > 2 ? '...' : ''}
+                  </p>
+                </div>
+                
+                {/* Selection indicator */}
+                {selectedCategory === category.id && (
+                  <div className="absolute top-2 right-2 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop: Grid layout */}
+        <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-6 gap-4">
           {categories.map((category) => (
             <button
               key={category.id}
