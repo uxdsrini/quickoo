@@ -197,7 +197,6 @@ export function ShopDetailPage({ shopId, onBack, onNavigateToCart }: ShopDetailP
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-2xl p-4 shadow-lg backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs opacity-90 mb-1 font-light">Deal of the Day unlocked! Saving ₹690</p>
                 <p className="text-base font-medium">
                   {getTotalItems()} {getTotalItems() === 1 ? 'Item' : 'Items'} added
                 </p>

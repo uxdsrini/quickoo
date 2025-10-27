@@ -47,8 +47,9 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [locationName, setLocationName] = useState('Your Location');
   const [locationLoading, setLocationLoading] = useState(false);
   const [showDeliveryCard, setShowDeliveryCard] = useState(true);
-  const [showServiceAlert, setShowServiceAlert] = useState(false);
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
+  const [showLocationSelector, setShowLocationSelector] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [serviceAvailable, setServiceAvailable] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -91,11 +92,6 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
       );
       
       setServiceAvailable(isAvailable);
-      
-      // Show service unavailability alert only for logged-in users
-      if (user && !isAvailable && city !== 'Your Location' && city !== 'Location unavailable') {
-        setShowServiceAlert(true);
-      }
       
       return isAvailable;
     };
@@ -435,40 +431,152 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   }
 
   // If user is in a location other than Ramagiri, show service unavailable page
-  if (user && locationName !== 'Your Location' && locationName !== 'Location unavailable' && locationName !== 'Getting location...' && !serviceAvailable) {
+  if (locationName !== 'Your Location' && locationName !== 'Location unavailable' && locationName !== 'Getting location...' && locationName !== 'Location access denied' && !serviceAvailable) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <MapPin className="w-12 h-12 text-orange-600" />
+      <div className="min-h-screen bg-gray-50">
+        {/* Header with detected location */}
+        <div className="bg-white border-b border-gray-200 px-4 py-4">
+          <div className="max-w-2xl mx-auto">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <button
+                onClick={() => setShowLocationSelector(true)}
+                className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors flex items-center gap-1"
+              >
+                {locationName}
+                <Search className="w-3 h-3 opacity-60" />
+              </button>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Service Not Available 📍
-          </h2>
-          <p className="text-gray-600 mb-6">
-            We're sorry, but we don't have service available at <strong>{locationName}</strong> yet.
-          </p>
-          
-          <div className="bg-blue-50 rounded-lg p-6 mb-6">
-            <h3 className="font-semibold text-blue-900 mb-2">We're expanding soon!</h3>
-            <p className="text-sm text-blue-800">
-              We'll notify you as soon as we start delivering to your area. Thanks for your interest! 🙏
-            </p>
-          </div>
-
-          <div className="bg-green-50 rounded-lg p-6 mb-6">
-            <p className="text-sm text-green-800">
-              <strong>Currently serving:</strong> Ramagiri and surrounding areas
-            </p>
-          </div>
-
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-          >
-            Refresh Location
-          </button>
         </div>
+
+        {/* Service unavailable content */}
+        <div className="max-w-2xl mx-auto px-4 py-12">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertCircle className="w-12 h-12 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              We're not available in your area
+            </h2>
+            <p className="text-gray-600 mb-6">
+              We currently don't deliver to <strong>{locationName}</strong>, but we're expanding soon!
+            </p>
+            
+            <div className="bg-blue-50 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-blue-900 mb-2">Available locations</h3>
+              <p className="text-sm text-blue-800">
+                We currently serve <strong>Ramagiri</strong> and surrounding areas
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowLocationSelector(true)}
+                className="w-full bg-emerald-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-emerald-700 transition-colors"
+              >
+                Change Location
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-gray-100 text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+              >
+                Retry Location Detection
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Location Selector Modal */}
+        {showLocationSelector && (
+          <div className="fixed inset-0 bg-white z-50">
+            <div className="max-w-2xl mx-auto h-full flex flex-col">
+              {/* Header */}
+              <div className="flex items-center gap-4 p-4 border-b border-gray-100">
+                <button
+                  onClick={() => setShowLocationSelector(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  Enter your area or apartment name
+                </h1>
+              </div>
+
+              <div className="flex-1 p-4">
+                {/* Search Input */}
+                <div className="relative mb-6">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Try J P Nagar, Andheri West etc..."
+                    value={locationSearchQuery}
+                    onChange={(e) => setLocationSearchQuery(e.target.value)}
+                    className="pl-12 pr-4 py-4 text-base border-2 border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-0"
+                  />
+                </div>
+
+                {/* Use Current Location Button */}
+                <button
+                  onClick={() => {
+                    setShowLocationSelector(false);
+                    window.location.reload();
+                  }}
+                  className="flex items-center gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors mb-8"
+                >
+                  <div className="w-6 h-6 text-orange-500">
+                    <MapPin className="w-6 h-6" />
+                  </div>
+                  <span className="text-orange-500 font-medium">Use my current location</span>
+                </button>
+
+                {/* Available Locations */}
+                <div className="mb-8">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                    AVAILABLE LOCATIONS
+                  </h3>
+                  
+                  <button
+                    onClick={() => {
+                      setLocationName('Ramagiri');
+                      setServiceAvailable(true);
+                      setShowLocationSelector(false);
+                    }}
+                    className="flex items-start gap-3 w-full p-4 text-left hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-200"
+                  >
+                    <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">Ramagiri</div>
+                      <div className="text-sm text-emerald-600">Service Available • Full Menu</div>
+                    </div>
+                    <div className="text-sm text-emerald-600 font-medium">
+                      Select
+                    </div>
+                  </button>
+                </div>
+
+                {/* Current Location (Not Available) */}
+                <div className="mb-8">
+                  <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                    DETECTED LOCATION
+                  </h3>
+                  
+                  <div className="flex items-start gap-3 w-full p-4 rounded-xl bg-gray-50 opacity-60">
+                    <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">{locationName}</div>
+                      <div className="text-sm text-red-600">Service not available</div>
+                    </div>
+                    <div className="text-sm text-red-500 font-medium">
+                      Not Available
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -485,7 +593,12 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
               <span className="text-sm font-medium text-gray-500">Getting location...</span>
             </div>
           ) : (
-            <span className="text-sm font-medium text-gray-700">{locationName}</span>
+            <button
+              onClick={() => setShowLocationSelector(true)}
+              className="text-sm font-medium text-gray-700 hover:text-emerald-600 transition-colors"
+            >
+              {locationName}
+            </button>
           )}
         </div>
       </div>
@@ -767,34 +880,98 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
         </div>
       )}
 
-      {/* Service Unavailability Alert */}
-      {showServiceAlert && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="w-8 h-8 text-orange-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Service Not Available 📍
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  We are not available at <strong>{locationName}</strong> yet, but we're expanding soon!
-                </p>
-                <div className="bg-blue-50 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-blue-800">
-                    We'll update you as soon as we start delivering to your area. Thanks for visiting! 🙏
-                  </p>
-                </div>
+      {/* Location Selector Modal */}
+      {showLocationSelector && (
+        <div className="fixed inset-0 bg-white z-50">
+          <div className="max-w-2xl mx-auto h-full flex flex-col">
+            {/* Header */}
+            <div className="flex items-center gap-4 p-4 border-b border-gray-100">
+              <button
+                onClick={() => setShowLocationSelector(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+              <h1 className="text-lg font-semibold text-gray-900">
+                Enter your area or apartment name
+              </h1>
+            </div>
+
+            <div className="flex-1 p-4">
+              {/* Search Input */}
+              <div className="relative mb-6">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Try J P Nagar, Andheri West etc..."
+                  value={locationSearchQuery}
+                  onChange={(e) => setLocationSearchQuery(e.target.value)}
+                  className="pl-12 pr-4 py-4 text-base border-2 border-gray-200 rounded-2xl focus:border-emerald-500 focus:ring-0"
+                />
               </div>
 
+              {/* Use Current Location Button */}
               <button
-                onClick={() => setShowServiceAlert(false)}
-                className="w-full bg-emerald-600 text-white py-3 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+                onClick={() => {
+                  setShowLocationSelector(false);
+                  // Trigger location request again
+                  window.location.reload();
+                }}
+                className="flex items-center gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors mb-8"
               >
-                Got it, Thanks!
+                <div className="w-6 h-6 text-orange-500">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <span className="text-orange-500 font-medium">Use my current location</span>
+                <div className="ml-auto">
+                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                </div>
               </button>
+
+              {/* Recent Searches Section */}
+              <div className="mb-8">
+                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                  RECENT SEARCHES
+                </h3>
+                
+                {/* Service Location Option */}
+                <button
+                  onClick={() => {
+                    setLocationName('Ramagiri');
+                    setServiceAvailable(true);
+                    setShowLocationSelector(false);
+                  }}
+                  className="flex items-start gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
+                  <div>
+                    <div className="font-medium text-gray-900">Ramagiri</div>
+                    <div className="text-sm text-gray-500">Service Available</div>
+                  </div>
+                  <div className="ml-auto text-sm text-gray-400">
+                    Available
+                  </div>
+                </button>
+
+                {/* Show current location if different */}
+                {locationName !== 'Your Location' && locationName !== 'Ramagiri' && (
+                  <button
+                    onClick={() => {
+                      setShowLocationSelector(false);
+                    }}
+                    className="flex items-start gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors opacity-60"
+                  >
+                    <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
+                    <div>
+                      <div className="font-medium text-gray-900">{locationName}</div>
+                      <div className="text-sm text-gray-500">Service not available</div>
+                    </div>
+                    <div className="ml-auto text-sm text-red-400">
+                      Not Available
+                    </div>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
