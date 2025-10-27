@@ -127,7 +127,7 @@ function AppContent() {
               className="flex items-center gap-2 hover:opacity-80 transition-opacity"
             >
               <img 
-                src="/apple-touch-icon.png" 
+                src="/" 
                 alt="Logo" 
                 className="w-8 h-8 rounded-lg" 
               />
