@@ -54,39 +54,19 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [, setCurrentBannerIndex] = useState(0);
   const [showDeliveryCard, setShowDeliveryCard] = useState(true);
   
-  // Comprehensive list of Indian cities and locations
+  // Service locations only
   const indianLocations = [
-    // Major Metro Cities
-    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad',
-    // State Capitals
-    'Lucknow', 'Jaipur', 'Bhopal', 'Thiruvananthapuram', 'Gandhi Nagar', 'Chandigarh', 'Guwahati', 'Ranchi',
-    'Raipur', 'Bhubaneswar', 'Dehradun', 'Shimla', 'Jammu', 'Srinagar', 'Itanagar', 'Dispur',
-    'Imphal', 'Shillong', 'Aizawl', 'Kohima', 'Gangtok', 'Agartala', 'Port Blair',
-    // Tier 2 Cities
-    'Surat', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Visakhapatnam', 'Patna', 'Vadodara',
-    'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Kalyan-Dombivli',
-    'Vasai-Virar', 'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai',
-    'Allahabad', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur', 'Gwalior', 'Vijayawada', 'Jodhpur',
-    'Madurai', 'Raipur', 'Kota', 'Guwahati', 'Chandigarh', 'Solapur', 'Hubballi-Dharwad', 'Tiruchirappalli',
-    'Bareilly', 'Mysore', 'Tiruppur', 'Gurgaon', 'Aligarh', 'Jalandhar', 'Bhubaneswar', 'Salem',
-    'Mira-Bhayandar', 'Warangal', 'Guntur', 'Bhiwandi', 'Saharanpur', 'Gorakhpur', 'Bikaner', 'Amravati',
-    'Noida', 'Jamshedpur', 'Bhilai', 'Cuttack', 'Firozabad', 'Kochi', 'Nellore', 'Bhavnagar',
-    // Popular Areas and Neighborhoods
-    'Andheri', 'Bandra', 'Powai', 'Goregaon', 'Malad', 'Kandivali', 'Borivali', 'Vikhroli', 'Ghatkopar',
-    'Kurla', 'Mulund', 'Thane West', 'Dombivli', 'Kalyan', 'Navi Mumbai', 'Panvel', 'Kharghar',
-    'Connaught Place', 'Karol Bagh', 'Lajpat Nagar', 'Saket', 'Dwarka', 'Rohini', 'Janakpuri',
-    'Pitampura', 'Laxmi Nagar', 'Mayur Vihar', 'Vasant Kunj', 'Greater Kailash', 'Defence Colony',
-    'Koramangala', 'Indiranagar', 'Whitefield', 'Electronic City', 'Marathahalli', 'BTM Layout',
-    'J P Nagar', 'Jayanagar', 'Rajajinagar', 'Malleshwaram', 'Basavanagudi', 'Yelahanka',
-    'Banjara Hills', 'Jubilee Hills', 'Madhapur', 'Gachibowli', 'Kondapur', 'Kukatpally', 'Secunderabad',
-    'T Nagar', 'Anna Nagar', 'Adyar', 'Velachery', 'Tambaram', 'Chrompet', 'Porur', 'OMR',
-    'Salt Lake', 'New Town', 'Ballygunge', 'Park Street', 'Gariahat', 'Behala', 'Rajarhat',
-    // Telangana specific
-    'Ramagiri', 'Karimnagar', 'Nizamabad', 'Khammam', 'Mahabubnagar', 'Nalgonda', 'Adilabad', 'Medak',
-    'Warangal', 'Siddipet', 'Sangareddy', 'Vikarabad', 'Yadadri', 'Jagitial', 'Rajanna Sircilla',
-    'Kamareddy', 'Mahabubabad', 'Suryapet', 'Bhongir', 'Jangaon', 'Jayashankar', 'Mulugu', 'Bhadradri',
-    'Asifabad', 'Mancherial', 'Nirmal', 'Nagarkurnool', 'Wanaparthy', 'Narayanpet', 'Jogulamba Gadwal'
+    // Telangana specific - Service available locations
+    'Ramagiri', 'JNTUH College of Engineering-Manthani', 'Centenary Colony'
   ];
+
+  // Helper function to check if service is available in a location
+  const isServiceAvailableInLocation = (locationName: string) => {
+    const availableKeywords = ['ramagiri', 'jntuh college of engineering-manthani', 'centenary colony', 'manthani'];
+    return availableKeywords.some(keyword => 
+      locationName.toLowerCase().includes(keyword.toLowerCase())
+    );
+  };
 
   // Filter locations based on search query
   const filteredLocations = locationSearchQuery.trim() 
@@ -155,7 +135,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   useEffect(() => {
     const checkServiceAvailability = (city: string) => {
       // Check if service is available in the user's location
-      const availableCities = ['Ramagiri', 'ramagiri', 'RAMAGIRI'];
+      const availableCities = ['Ramagiri', 'ramagiri', 'RAMAGIRI', 'JNTUH College of Engineering-Manthani', 'Centenary Colony', 'Manthani'];
       const isAvailable = availableCities.some(availableCity => 
         city.toLowerCase().includes(availableCity.toLowerCase()) ||
         availableCity.toLowerCase().includes(city.toLowerCase())
@@ -598,7 +578,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                         <button
                           key={index}
                           onClick={() => {
-                            const isServiceAvailable = location.toLowerCase().includes('ramagiri');
+                            const isServiceAvailable = isServiceAvailableInLocation(location);
                             setLocationName(location);
                             setServiceAvailable(isServiceAvailable);
                             setLocationSearchQuery('');
@@ -610,11 +590,11 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                           <div className="flex-1">
                             <div className="font-medium text-gray-900">{location}</div>
                             <div className="text-sm text-gray-500">
-                              {location.toLowerCase().includes('ramagiri') ? 'Service Available' : 'Service not available'}
+                              {isServiceAvailableInLocation(location) ? 'Service Available' : 'Service not available'}
                             </div>
                           </div>
                           <div className="text-sm font-medium">
-                            {location.toLowerCase().includes('ramagiri') ? (
+                            {isServiceAvailableInLocation(location) ? (
                               <span className="text-emerald-600">Available</span>
                             ) : (
                               <span className="text-red-500">Not Available</span>
@@ -661,23 +641,44 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                       AVAILABLE LOCATIONS
                     </h3>
                     
-                    <button
-                      onClick={() => {
-                        setLocationName('Ramagiri');
-                        setServiceAvailable(true);
-                        setShowLocationSelector(false);
-                      }}
-                      className="flex items-start gap-3 w-full p-4 text-left hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-200"
-                    >
-                      <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
-                      <div className="flex-1">
-                        <div className="font-medium text-gray-900">Ramagiri</div>
-                        <div className="text-sm text-emerald-600">Service Available • Full Menu</div>
-                      </div>
-                      <div className="text-sm text-emerald-600 font-medium">
-                        Select
-                      </div>
-                    </button>
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => {
+                          setLocationName('Ramagiri');
+                          setServiceAvailable(true);
+                          setShowLocationSelector(false);
+                        }}
+                        className="flex items-start gap-3 w-full p-4 text-left hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-200"
+                      >
+                        <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">Ramagiri</div>
+                          <div className="text-sm text-emerald-600">Service Available • Full Menu</div>
+                        </div>
+                        <div className="text-sm text-emerald-600 font-medium">
+                          Select
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setLocationName('JNTUH College of Engineering-Manthani@Centenary Colony');
+                          setServiceAvailable(true);
+                          setShowLocationSelector(false);
+                        }}
+                        className="flex items-start gap-3 w-full p-4 text-left hover:bg-emerald-50 rounded-xl transition-colors border border-emerald-200"
+                      >
+                        <MapPin className="w-5 h-5 text-emerald-600 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">JNTUH College of Engineering-Manthani</div>
+                          <div className="text-sm text-gray-500">Centenary Colony</div>
+                          <div className="text-sm text-emerald-600">Service Available • Full Menu</div>
+                        </div>
+                        <div className="text-sm text-emerald-600 font-medium">
+                          Select
+                        </div>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1054,7 +1055,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                       <button
                         key={index}
                         onClick={() => {
-                          const isServiceAvailable = location.toLowerCase().includes('ramagiri');
+                          const isServiceAvailable = isServiceAvailableInLocation(location);
                           setLocationName(location);
                           setServiceAvailable(isServiceAvailable);
                           setLocationSearchQuery('');
@@ -1069,11 +1070,11 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                         <div className="flex-1">
                           <div className="font-medium text-gray-900">{location}</div>
                           <div className="text-sm text-gray-500">
-                            {location.toLowerCase().includes('ramagiri') ? 'Service Available' : 'Service not available'}
+                            {isServiceAvailableInLocation(location) ? 'Service Available' : 'Service not available'}
                           </div>
                         </div>
                         <div className="text-sm font-medium">
-                          {location.toLowerCase().includes('ramagiri') ? (
+                          {isServiceAvailableInLocation(location) ? (
                             <span className="text-emerald-600">Available</span>
                           ) : (
                             <span className="text-red-500">Not Available</span>
@@ -1123,27 +1124,47 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                   RECENT SEARCHES
                 </h3>
                 
-                {/* Service Location Option */}
-                <button
-                  onClick={() => {
-                    setLocationName('Ramagiri');
-                    setServiceAvailable(true);
-                    setShowLocationSelector(false);
-                  }}
-                  className="flex items-start gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
-                >
-                  <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-gray-900">Ramagiri</div>
-                    <div className="text-sm text-gray-500">Service Available</div>
-                  </div>
-                  <div className="ml-auto text-sm text-gray-400">
-                    Available
-                  </div>
-                </button>
+                {/* Service Location Options */}
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setLocationName('Ramagiri');
+                      setServiceAvailable(true);
+                      setShowLocationSelector(false);
+                    }}
+                    className="flex items-start gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
+                  >
+                    <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
+                    <div>
+                      <div className="font-medium text-gray-900">Ramagiri</div>
+                      <div className="text-sm text-gray-500">Service Available</div>
+                    </div>
+                    <div className="ml-auto text-sm text-gray-400">
+                      Available
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setLocationName('JNTUH College of Engineering-Manthani@Centenary Colony');
+                      setServiceAvailable(true);
+                      setShowLocationSelector(false);
+                    }}
+                    className="flex items-start gap-3 w-full p-4 text-left hover:bg-gray-50 rounded-xl transition-colors"
+                  >
+                    <MapPin className="w-5 h-5 text-gray-600 mt-0.5" />
+                    <div>
+                      <div className="font-medium text-gray-900">JNTUH College-Manthani</div>
+                      <div className="text-sm text-gray-500">Service Available</div>
+                    </div>
+                    <div className="ml-auto text-sm text-gray-400">
+                      Available
+                    </div>
+                  </button>
+                </div>
 
                 {/* Show current location if different */}
-                {locationName !== 'Your Location' && locationName !== 'Ramagiri' && (
+                {locationName !== 'Your Location' && locationName !== 'Ramagiri' && locationName !== 'JNTUH College of Engineering-Manthani@Centenary Colony' && (
                   <button
                     onClick={() => {
                       setShowLocationSelector(false);
