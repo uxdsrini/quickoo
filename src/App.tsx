@@ -20,34 +20,62 @@ function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
   const [hasCheckedProfile, setHasCheckedProfile] = useState(false);
+  const [intendedDestination, setIntendedDestination] = useState<Page | null>(null);
+  const [showCartReviewMessage, setShowCartReviewMessage] = useState(false);
 
   const handleShopSelect = (shopId: string) => {
     setSelectedShopId(shopId);
     setCurrentPage('shop');
   };
 
-  // Navigate to home after login (profile completion handled in HomePage)
+  // Navigate after login with intended destination support
   useEffect(() => {
     if (user && !loading && !hasCheckedProfile) {
       setHasCheckedProfile(true);
       
-      // Always go to home page after login, profile banner will guide incomplete profiles
       if (currentPage === 'auth') {
-        setCurrentPage('home');
+        // If user was trying to go somewhere specific before login
+        if (intendedDestination) {
+          // Check if they can access the intended destination
+          if (intendedDestination === 'checkout' && !isProfileComplete()) {
+            alert('Please complete your profile before placing an order');
+            setCurrentPage('profile');
+          } else {
+            // If returning to cart after login, show review message
+            if (intendedDestination === 'cart') {
+              setShowCartReviewMessage(true);
+            }
+            setCurrentPage(intendedDestination);
+          }
+          setIntendedDestination(null); // Clear the intended destination
+        } else {
+          // Default navigation to home
+          setCurrentPage('home');
+        }
       }
     } else if (!user) {
       setHasCheckedProfile(false);
+      setIntendedDestination(null); // Clear intended destination when user logs out
     }
-  }, [user, loading, hasCheckedProfile, currentPage]);
+  }, [user, loading, hasCheckedProfile, currentPage, intendedDestination, isProfileComplete]);
 
   const handleNavigation = (page: Page) => {
     if (page === 'profile' || page === 'orders' || page === 'checkout') {
       if (!user) {
+        // For checkout, redirect to cart after login so user can review items
+        if (page === 'checkout') {
+          setIntendedDestination('cart');
+        } else {
+          // For other protected pages, remember the exact destination
+          setIntendedDestination(page);
+        }
         setCurrentPage('auth');
         return;
       }
       // Check if profile is complete for checkout
       if (page === 'checkout' && !isProfileComplete()) {
+        // Remember that user wanted to go to checkout after profile completion
+        setIntendedDestination('checkout');
         alert('Please complete your profile before placing an order');
         setCurrentPage('profile');
         return;
@@ -79,6 +107,8 @@ function AppContent() {
         return (
           <CartPage
             onCheckout={() => handleNavigation('checkout')}
+            showReviewMessage={showCartReviewMessage}
+            onReviewMessageDismiss={() => setShowCartReviewMessage(false)}
           />
         );
       case 'checkout':
@@ -94,7 +124,16 @@ function AppContent() {
         return (
           <ProfilePage 
             onSignOut={() => setCurrentPage('auth')}
-            onProfileComplete={() => setCurrentPage('home')}
+            onProfileComplete={() => {
+              // If user was redirected to profile during checkout flow, go back to cart for review
+              if (intendedDestination === 'checkout') {
+                setShowCartReviewMessage(true);
+                setCurrentPage('cart');
+                setIntendedDestination(null);
+              } else {
+                setCurrentPage('home');
+              }
+            }}
           />
         );
       case 'auth':

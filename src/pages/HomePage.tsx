@@ -777,7 +777,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                         copyUpiId();
                       }}
                       className="text-blue-600 hover:text-blue-700 p-1 rounded transition-colors"
-                      title="Copy UPI ID"
+                      title="Copy Number"
                     ></button>
               </div>
             </div>

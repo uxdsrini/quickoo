@@ -1,11 +1,13 @@
 import { useCart } from '../contexts/CartContext';
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, CheckCircle, X } from 'lucide-react';
 
 interface CartPageProps {
   onCheckout: () => void;
+  showReviewMessage?: boolean;
+  onReviewMessageDismiss?: () => void;
 }
 
-export function CartPage({ onCheckout }: CartPageProps) {
+export function CartPage({ onCheckout, showReviewMessage, onReviewMessageDismiss }: CartPageProps) {
   const { items, updateQuantity, removeFromCart, getTotalPrice } = useCart();
 
   if (items.length === 0) {
@@ -26,7 +28,29 @@ export function CartPage({ onCheckout }: CartPageProps) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Shopping Cart</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">Your Cart</h1>
+
+      {/* Review Message after Login/Profile Completion */}
+      {showReviewMessage && (
+        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 relative">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-emerald-900 mb-1">Welcome back!</h3>
+              <p className="text-sm text-emerald-800">
+                Please review your items below and proceed to checkout when ready.
+              </p>
+            </div>
+            <button
+              onClick={onReviewMessageDismiss}
+              className="absolute top-3 right-3 p-1 hover:bg-emerald-100 rounded-full transition-colors group"
+              aria-label="Dismiss message"
+            >
+              <X className="w-4 h-4 text-emerald-600 group-hover:text-emerald-700" />
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">

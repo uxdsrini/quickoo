@@ -8,9 +8,11 @@ interface AuthPageProps {
 }
 
 export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, resetPassword } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -141,6 +143,46 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email.trim()) {
+      setErrors(prev => ({ ...prev, email: 'Please enter your email address' }));
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      setErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+      return;
+    }
+
+    setLoading(true);
+    setErrors(prev => ({ ...prev, general: '' }));
+
+    try {
+      const { error } = await resetPassword(formData.email);
+      if (error) throw error;
+      
+      setResetEmailSent(true);
+    } catch (error: unknown) {
+      let errorMessage = 'Failed to send reset email. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('auth/user-not-found')) {
+          errorMessage = "We don't have this email registered with us. Please check your email address.";
+        } else if (error.message.includes('auth/invalid-email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (error.message.includes('auth/too-many-requests')) {
+          errorMessage = 'Too many reset attempts. Please try again later.';
+        }
+      }
+      
+      setErrors(prev => ({ ...prev, general: errorMessage }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
@@ -234,6 +276,17 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
                 <p className="text-xs text-gray-500 mt-1">
                   Password must be at least 6 characters
                 </p>
+              )}
+              {!isSignUp && (
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-emerald-600 hover:text-emerald-700"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               )}
             </div>
 
@@ -439,6 +492,123 @@ export function AuthPage({ onSignUpSuccess, onSignInSuccess }: AuthPageProps) {
               >
                 Accept Terms
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">
+                Reset Password
+              </h3>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setResetEmailSent(false);
+                  setErrors(prev => ({ ...prev, general: '', email: '' }));
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {resetEmailSent ? (
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Mail className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    Check Your Email
+                  </h4>
+                  <p className="text-gray-600 mb-6">
+                    We've sent a password reset link to <strong>{formData.email}</strong>
+                  </p>
+                  <p className="text-sm text-gray-500 mb-6">
+                    Didn't receive the email? Check your spam folder or try again.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setResetEmailSent(false);
+                      setErrors(prev => ({ ...prev, general: '', email: '' }));
+                    }}
+                    className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword}>
+                  <p className="text-gray-600 mb-4">
+                    Enter your email address and we'll send you a link to reset your password.
+                  </p>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Mail className="w-4 h-4 inline mr-1" />
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={e => {
+                        setFormData({ ...formData, email: e.target.value });
+                        if (errors.email) {
+                          setErrors({ ...errors, email: '' });
+                        }
+                      }}
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
+                        errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter your email"
+                      required
+                    />
+                    {errors.email && (
+                      <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                    )}
+                  </div>
+
+                  {errors.general && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-sm text-red-600">{errors.general}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowForgotPassword(false);
+                        setResetEmailSent(false);
+                        setErrors(prev => ({ ...prev, general: '', email: '' }));
+                      }}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        'Send Reset Link'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </div>
