@@ -830,7 +830,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <Store className="w-6 h-6 text-emerald-600" />
-          <h1 className="text-xl font-bold text-gray-900">Grocery Stores Near You</h1>
+          <h1 className="text-xl font-bold text-gray-900">Local Stores Near You</h1>
         </div>
         <p className="text-sm text-gray-600">Browse local stores and order fresh products</p>
       </div>
