@@ -44,6 +44,9 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [locationName, setLocationName] = useState('Your Location');
   const [locationLoading, setLocationLoading] = useState(false);
   const [showLocationPermissionAlert, setShowLocationPermissionAlert] = useState(false);
@@ -51,7 +54,6 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [serviceAvailable, setServiceAvailable] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [, setCurrentBannerIndex] = useState(0);
   const [showDeliveryCard, setShowDeliveryCard] = useState(true);
   
   // Service locations only
@@ -76,32 +78,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     : [];
 
   // Banner data
-  const banners = [
-    {
-      id: 1,
-      title: "Fresh Vegetables Daily",
-      subtitle: "Get 20% off on all fresh vegetables",
-      backgroundColor: "bg-gradient-to-r from-green-400 to-green-600",
-      textColor: "text-white",
-      image: "🥬"
-    },
-    {
-      id: 2,
-      title: "Premium Groceries",
-      subtitle: "Quality products at the best prices",
-      backgroundColor: "bg-gradient-to-r from-blue-400 to-blue-600",
-      textColor: "text-white",
-      image: "🛒"
-    },
-    {
-      id: 3,
-      title: "Fast Delivery",
-      subtitle: "Same day delivery within 2 hours",
-      backgroundColor: "bg-gradient-to-r from-orange-400 to-orange-600",
-      textColor: "text-white",
-      image: "⚡"
-    }
-  ];
+  // (Removed unused banners variable)
 
   useEffect(() => {
     loadShops();
@@ -122,14 +99,22 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     }
   }, [user, authLoading, locationName]);
 
-  // Auto-advance banner carousel
+  // Load search history from localStorage
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentBannerIndex((prev) => (prev + 1) % banners.length);
-    }, 5000); // Change banner every 5 seconds
+    const savedHistory = localStorage.getItem('searchHistory');
+    if (savedHistory) {
+      try {
+        setSearchHistory(JSON.parse(savedHistory));
+      } catch (error) {
+        console.error('Error loading search history:', error);
+      }
+    }
+  }, []);
 
-    return () => clearInterval(timer);
-  }, [banners.length]);
+  // Save search history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+  }, [searchHistory]);
 
   // Request location permission on component mount
   useEffect(() => {
@@ -709,9 +694,139 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
     );
   }
 
-  function copyUpiId() {
-    throw new Error('Function not implemented.');
-  }
+  // Generate search suggestions based on store names and categories
+  const getSearchSuggestions = () => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return [];
+
+    const suggestions = new Set<string>();
+
+    // Add matching store names
+    shops.forEach(shop => {
+      if (shop.name.toLowerCase().includes(query)) {
+        suggestions.add(shop.name);
+      }
+    });
+
+    // Add matching categories
+    categories.forEach(category => {
+      if (category.name.toLowerCase().includes(query)) {
+        suggestions.add(category.name);
+      }
+      category.stores.forEach(storeType => {
+        if (storeType.toLowerCase().includes(query)) {
+          suggestions.add(storeType);
+        }
+      });
+    });
+
+    // Add recent searches that match
+    searchHistory.forEach(historyItem => {
+      if (historyItem.toLowerCase().includes(query) && !suggestions.has(historyItem)) {
+        suggestions.add(historyItem);
+      }
+    });
+
+    return Array.from(suggestions).slice(0, 8); // Limit to 8 suggestions
+  };
+
+  // Handle search input changes
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
+    setShowSearchSuggestions(value.length > 0);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  // Handle search submission
+  const handleSearchSubmit = (searchTerm?: string) => {
+    const term = searchTerm || searchQuery;
+    if (term.trim()) {
+      // Add to search history if not already present
+      setSearchHistory(prev => {
+        const filtered = prev.filter(item => item !== term);
+        return [term, ...filtered].slice(0, 10); // Keep only last 10 searches
+      });
+    }
+    setShowSearchSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  // Handle keyboard navigation in suggestions
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const suggestions = getSearchSuggestions();
+
+    if (!showSearchSuggestions || suggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev =>
+          prev < suggestions.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedSuggestionIndex >= 0) {
+          const selectedSuggestion = suggestions[selectedSuggestionIndex];
+          setSearchQuery(selectedSuggestion);
+          handleSearchSubmit(selectedSuggestion);
+        } else {
+          handleSearchSubmit();
+        }
+        break;
+      case 'Escape':
+        setShowSearchSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+        break;
+    }
+  };
+
+  // Clear search history
+  const clearSearchHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem('searchHistory');
+  };
+
+  // Handle clicking outside to close suggestions
+  const handleSearchBlur = () => {
+    // Delay hiding suggestions to allow clicking on them
+    setTimeout(() => {
+      setShowSearchSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }, 150);
+  };
+
+  // Utility function to copy UPI ID or phone number to clipboard
+  const copyUpiId = () => {
+    const upiId = '9963650466';
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(upiId)
+        .then(() => {
+          alert('Number copied to clipboard!');
+        })
+        .catch(() => {
+          alert('Failed to copy number.');
+        });
+    } else {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = upiId;
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        alert('Number copied to clipboard!');
+      } catch {
+        alert('Failed to copy number.');
+      }
+      document.body.removeChild(textarea);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-4">
@@ -819,17 +934,106 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
       )}
 
       {/* Search Bar */}
-      <div className="mb-6">
+      <div className="mb-6 relative">
         <div className="relative max-w-xl">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
           <Input
             type="text"
             placeholder="Search by store name or category..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
+            onBlur={handleSearchBlur}
+            onFocus={() => {
+              if (searchQuery.trim() || searchHistory.length > 0) {
+                setShowSearchSuggestions(true);
+              }
+            }}
             className="pl-10 pr-4 py-2 w-full"
           />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setShowSearchSuggestions(false);
+                setSelectedSuggestionIndex(-1);
+              }}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+          )}
         </div>
+
+        {/* Search Suggestions Dropdown */}
+        {showSearchSuggestions && (
+          <div className="absolute top-full left-0 right-0 max-w-xl bg-white border border-gray-200 rounded-lg shadow-lg z-50 mt-1 max-h-80 overflow-y-auto">
+            {/* Recent Searches */}
+            {!searchQuery.trim() && searchHistory.length > 0 && (
+              <div className="p-3 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-medium text-gray-700">Recent Searches</h4>
+                  <button
+                    onClick={clearSearchHistory}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  {searchHistory.slice(0, 5).map((historyItem, index) => (
+                    <button
+                      key={`history-${index}`}
+                      onClick={() => {
+                        setSearchQuery(historyItem);
+                        handleSearchSubmit(historyItem);
+                      }}
+                      className="flex items-center gap-3 w-full p-2 text-left hover:bg-gray-50 rounded-md transition-colors group"
+                    >
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-700">{historyItem}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Search Suggestions */}
+            {searchQuery.trim() && (
+              <div className="p-2">
+                <div className="space-y-1">
+                  {getSearchSuggestions().map((suggestion, index) => (
+                    <button
+                      key={`suggestion-${index}`}
+                      onClick={() => {
+                        setSearchQuery(suggestion);
+                        handleSearchSubmit(suggestion);
+                      }}
+                      className={`flex items-center gap-3 w-full p-2 text-left rounded-md transition-colors ${
+                        index === selectedSuggestionIndex
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <Search className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm">{suggestion}</span>
+                      {searchHistory.includes(suggestion) && (
+                        <Clock className="w-3 h-3 text-gray-400 ml-auto" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                {getSearchSuggestions().length === 0 && (
+                  <div className="text-center py-4">
+                    <Search className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">No suggestions found</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {searchQuery && (
           <p className="text-sm text-gray-600 mt-2">
             Found {filteredShops.length} {filteredShops.length === 1 ? 'store' : 'stores'}
