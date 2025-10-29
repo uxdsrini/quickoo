@@ -842,24 +842,24 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
             <Clock className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="font-semibold text-blue-900 mb-1">Delivery Timings</h3>
-              <div className="text-sm text-blue-800 space-y-1">
+              <div className="text-sm text-red-600 space-y-1">
                 <p>
                   <span className="font-medium">Regular Hours:</span> 7:00 AM to 7:00 PM
                 </p>
-                <p>
+                <p className='text-black'>
                   <span className="font-medium">Emergency Service:</span> 7:00 PM to 10:00 PM (Extra charges apply)
                 </p>
-                <p className="text-xs">
+                <p className="text-xs text-black">
                   For emergency orders after 7 PM, after placing your order call to  {' '}
                   <a 
                     href="tel:9963650466" 
-                    className="font-medium text-blue-700 hover:text-blue-800 underline"
+                    className="font-medium text-black hover:text-blue-800 underline"
                   >
                     +919963650466
                   </a>{' '}
                  *
                 </p>
-                <p className="font-medium">Note: Prices are set by store owners and may change daily based on market rates. Our platform is not responsible for price fluctuations.</p>
+                <p className="font-medium text-red-600">Note: Prices are set by store owners and may change daily based on market rates. Our platform is not responsible for price fluctuations.</p>
               </div>
             </div>
             {/* Close Button */}
