@@ -802,31 +802,6 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
   };
 
   // Utility function to copy UPI ID or phone number to clipboard
-  const copyUpiId = () => {
-    const upiId = '9963650466';
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(upiId)
-        .then(() => {
-          alert('Number copied to clipboard!');
-        })
-        .catch(() => {
-          alert('Failed to copy number.');
-        });
-    } else {
-      // Fallback for older browsers
-      const textarea = document.createElement('textarea');
-      textarea.value = upiId;
-      document.body.appendChild(textarea);
-      textarea.select();
-      try {
-        document.execCommand('copy');
-        alert('Number copied to clipboard!');
-      } catch {
-        alert('Failed to copy number.');
-      }
-      document.body.removeChild(textarea);
-    }
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-4">
@@ -884,16 +859,6 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                   </a>{' '}
                  *
                 </p>
-                <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        copyUpiId();
-                      }}
-                      className="text-blue-600 hover:text-blue-700 p-1 rounded transition-colors"
-                      title="Copy Number"
-                    ></button>
               </div>
             </div>
             {/* Close Button */}
