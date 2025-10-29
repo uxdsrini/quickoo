@@ -859,6 +859,7 @@ export function HomePage({ onShopSelect, onNavigateToProfile }: HomePageProps) {
                   </a>{' '}
                  *
                 </p>
+                <p className="font-medium">Note: Prices are set by store owners and may change daily based on market rates. Our platform is not responsible for price fluctuations.</p>
               </div>
             </div>
             {/* Close Button */}
